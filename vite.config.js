@@ -10,6 +10,15 @@ export default defineConfig({
     vue(),
     vueDevTools(),
   ],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost/prestashop_edition_classic_version_8.2.6',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
