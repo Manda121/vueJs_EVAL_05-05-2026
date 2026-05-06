@@ -119,7 +119,7 @@ const fetchCustomers = async () => {
                 customers.value.push({
                     id: customernode.querySelector('id').textContent ,
                     firstname: customernode.querySelector('firstname').textContent.trim(),
-                });
+                }); 
 
             } catch (err) {
                 console.error("Erreur:", err);
