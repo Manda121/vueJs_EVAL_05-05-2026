@@ -6,12 +6,12 @@ import Loading from '../inc/Loading.vue';
 import Warning from '../inc/Warning.vue';
 import Error from '../inc/Error.vue';
 
-const customers = ref([]);
+const customer = ref([]);
 const loading = ref(true);
 const warning = ref(null);
 const error = ref(null);
 
-const props = defineProps({id_customer:Number});
+const id_customer = defineModel();
 
 // Configuration du parseur
 const parser = new XMLParser({
@@ -33,7 +33,7 @@ const fetchCustomer = async () => {
     error.value = null;
     
     try {
-        const response = await api.get('/customers/' + props.id_customer, {
+        const response = await api.get('/customers/' + id_customer.value, {
             params: { 'display': 'full' }
         });
         
@@ -52,7 +52,7 @@ const fetchCustomer = async () => {
 
         // Si l'API renvoie un seul client, fast-xml-parser peut renvoyer un objet au lieu d'un tableau.
         // On force le format tableau pour le v-for du template.
-        customers.value = Array.isArray(data) ? data : [data];
+        customer.value = Array.isArray(data) ? data : [data];
 
     } catch (err) {
         error.value = "Erreur lors de la récupération ou du traitement des données.";
@@ -66,8 +66,11 @@ onMounted(fetchCustomer);
 </script>
 
 <template>
-    <div>
+    <div class="popop">
         <h2>Liste des clients</h2>
+
+        <button @click="id_customer = null">X</button>
+
         <Loading v-if="loading" message="Chargement des clients..." />
 
         <table v-else border="1">
@@ -80,23 +83,21 @@ onMounted(fetchCustomer);
                     <th>Ventes</th>
                     <th>Actif</th>
                     <th>Inscription</th>
-                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="customer in customers" :key="customer.id">
-                    <td>{{ customer.id }}</td>
-                    <td>{{ customer.lastname }}</td>
-                    <td>{{ customer.firstname }}</td>
-                    <td>{{ customer.email }}</td>
-                    <td>{{ customer.max_payment_days }}</td>
+                <tr>
+                    <td>{{ customer[0].id }}</td>
+                    <td>{{ customer[0].lastname }}</td>
+                    <td>{{ customer[0].firstname }}</td>
+                    <td>{{ customer[0].email }}</td>
+                    <td>{{ customer[0].max_payment_days }}</td>
                     <td>
-                        <span :style="{ color: customer.active ? 'green' : 'red' }">
-                            {{ customer.active ? 'Oui' : 'Non' }}
+                        <span :style="{ color: customer[0].active ? 'green' : 'red' }">
+                            {{ customer[0].active ? 'Oui' : 'Non' }}
                         </span>
                     </td>
-                    <td>{{ customer.date_add }}</td>
-                    <td><button>Gérer</button></td>
+                    <td>{{ customer[0].date_add }}</td>
                 </tr>
             </tbody>
         </table>
@@ -107,6 +108,20 @@ onMounted(fetchCustomer);
 </template>
 
 <style scoped>
+
+.popop {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+    position: absolute;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;

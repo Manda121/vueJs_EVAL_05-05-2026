@@ -6,10 +6,14 @@ import Loading from '../inc/Loading.vue';
 import Warning from '../inc/Warning.vue';
 import Error from '../inc/Error.vue';
 
+import Detailscustomer from './Detailscustomer.vue';
+
 const customers = ref([]);
 const loading = ref(true);
 const warning = ref(null);
 const error = ref(null);
+
+const customer_id = ref(null);
 
 // Configuration du parseur
 const parser = new XMLParser({
@@ -64,10 +68,11 @@ onMounted(fetchCustomers);
 </script>
 
 <template>
-    <div>
+    <div :class="customer_id ? 'flou' : ''">
         <h2>Liste des clients</h2>
+        
         <Loading v-if="loading" message="Chargement des clients..." />
-
+        
         <table v-else border="1">
             <thead>
                 <tr>
@@ -94,17 +99,24 @@ onMounted(fetchCustomers);
                         </span>
                     </td>
                     <td>{{ customer.date_add }}</td>
-                    <td><button>Gérer</button></td>
+                    <td><button @click="customer_id = customer.id">Gérer</button></td>
                 </tr>
             </tbody>
         </table>
-
+        
+        
         <Warning :warning="warning" v-if="warning" />
         <Error :error="error" v-if="error" />
     </div>
+    <Detailscustomer v-if="customer_id" v-model="customer_id"/>
 </template>
 
 <style scoped>
+
+.flou{
+    filter: blur(5px);
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
