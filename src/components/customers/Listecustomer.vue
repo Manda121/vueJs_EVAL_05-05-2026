@@ -24,7 +24,6 @@ const fetchCustomerData = async (id) => {
 
         const xmlText = await response.text();
 
-        // On retourne le résultat de la transformation
         return transformXmlToJson(xmlText);
 
     } catch (err) {
@@ -49,27 +48,6 @@ const transformXmlToJson = (xmlText) => {
     return res;
 };
 
-// const transformXmlToJson = (xmlText) => {
-//     const parser = new DOMParser();
-//     const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-//     const customer = xmlDoc.querySelector("customer");
-
-//     if (!customer) return null;
-
-//     const getTxt = (tag) => customer.querySelector(tag)?.textContent.trim() || '';
-
-//     // On retourne l'objet directement
-//     return {
-//         id: getTxt('id'),
-//         titre: getTxt('id_gender') === '1' ? 'M.' : 'Mme',
-//         prenom: getTxt('firstname'),
-//         nom: getTxt('lastname'),
-//         email: getTxt('email'),
-//         active: getTxt('active'),
-//         inscription: getTxt('date_add')
-//     };
-// };
-
 const fetchCustomers = async () => {
     try {
         const response = await fetch(API_URL, {
@@ -90,16 +68,9 @@ const fetchCustomers = async () => {
         const xmlDoc = parser.parseFromString(xmlText, "text/xml");
 
         const customerNodes = xmlDoc.querySelectorAll("customer");
-        // console.log(customerNodes);
-        // Version simple avec une boucle classique
 
         customers.value = [];
         for (const node of customerNodes) {
-
-            // customers.value.push({
-            //     id: node.getAttribute('id'),
-            //     link: node.getAttribute('xlink:href')
-            // });
 
             try {
                 const res = await fetch(`${API_URL}/${node.getAttribute('id')}`, {
@@ -117,15 +88,21 @@ const fetchCustomers = async () => {
                 if (!customernode) return null;
 
                 customers.value.push({
-                    id: customernode.querySelector('id').textContent ,
+                    id: customernode.querySelector('id').textContent,
                     firstname: customernode.querySelector('firstname').textContent.trim(),
+                    lastname: customernode.querySelector('lastname').textContent,
+                    email: customernode.querySelector('email').textContent,
+                    max_payment_days: customernode.querySelector('max_payment_days').textContent,
+                    active: customernode.querySelector('active').textContent,
+                    is_guest: customernode.querySelector('is_guest').textContent,
+                    date_add: customernode.querySelector('date_add').textContent,
+                    date_upd: customernode.querySelector('date_upd').textContent,
                 }); 
 
             } catch (err) {
                 console.error("Erreur:", err);
                 return null;
             }
-            // customers.value.push(fetchCustomerData(node.getAttribute('id'))); // On ajoute la promesse de récupération des détails
         }
 
         console.log("Clients récupérés :", customers.value);
@@ -156,19 +133,33 @@ onMounted(fetchCustomers);
             <thead>
                 <tr>
                     <th>ID du Client</th>
-                    <th>Lien API (Détails)</th>
-                    <th>Action</th>
+                    <th>Nom</th>
+                    <th>Prenom</th>
+                    <th>Adresse e_mail</th>
+                    <!-- <th>Groupe</th> -->
+                    <th>ventes</th>
+                    <th>active</th>
+                    <!-- <th>lettre d information</th> -->
+                    <th>offre partenaire</th>
+                    <th>inscription</th>
+                    <th>derniere visite</th>
+                    <th>action</th>
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="customer in customers" :key="customer.id">
                     <td>{{ customer.id }}</td>
-                    <td>{{ customer.link }}</td>
-                    <td>
-                        <button @click="console.log('Voir détails de:', customer.id)">
-                            Détails
-                        </button>
-                    </td>
+                    <td>{{ customer.firstname }}</td>
+                    <td>{{ customer.lastname }}</td>
+                    <td>{{ customer.email }}</td>
+                    <!-- <td>{{ customer. }}</td> -->
+                    <td>{{ customer.max_payment_days }}</td>
+                    <td>{{ customer.active }}</td>
+                    <!-- <td>{{ customer. }}</td> -->
+                    <td>{{ customer.is_guest }}</td>
+                    <td>{{ customer.date_add }}</td>
+                    <td>{{ customer.date_upd }}</td>
+                    <td>action</td>
                 </tr>
             </tbody>
         </table>
