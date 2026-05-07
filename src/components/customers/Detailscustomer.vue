@@ -11,6 +11,8 @@ const loading = ref(true);
 const warning = ref(null);
 const error = ref(null);
 
+const props = defineProps({id_customer:Number});
+
 // Configuration du parseur
 const parser = new XMLParser({
     ignoreAttributes: false, // Garder les attributs si besoin (ex: id)
@@ -26,12 +28,12 @@ const api = axios.create({
     }
 });
 
-const fetchCustomers = async () => {
+const fetchCustomer = async () => {
     loading.value = true;
     error.value = null;
     
     try {
-        const response = await api.get('/customers', {
+        const response = await api.get('/customers/' + props.id_customer, {
             params: { 'display': 'full' }
         });
         
@@ -41,7 +43,7 @@ const fetchCustomers = async () => {
         console.log("Données parsées JSON:", jsonObj);
 
         // Accès aux données selon la structure PrestaShop : <prestashop><customers><customer>
-        const data = jsonObj?.prestashop?.customers?.customer;
+        const data = jsonObj?.prestashop?.customer;
 
         if (!data) {
             warning.value = "Aucun client trouvé.";
@@ -60,7 +62,7 @@ const fetchCustomers = async () => {
     }
 };
 
-onMounted(fetchCustomers);
+onMounted(fetchCustomer);
 </script>
 
 <template>
