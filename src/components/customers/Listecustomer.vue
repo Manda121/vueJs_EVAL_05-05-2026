@@ -32,22 +32,16 @@ const api = axios.create({
         'Authorization': 'Basic ' + btoa('4XZXKK1Y8MMXSCYUMHJZ8J26JUY4W8TB' + ':')
     }
 });
-
 const fetchCustomers = async () => {
     loading.value = true;
     error.value = null;
-    
+
     try {
         const response = await api.get('/customers', {
             params: { 'display': 'full' }
         });
-        
-        // Conversion XML -> JSON
+
         const jsonObj = parser.parse(response.data);
-
-        console.log("Données parsées JSON:", jsonObj);
-
-        // Accès aux données selon la structure PrestaShop : <prestashop><customers><customer>
         const data = jsonObj?.prestashop?.customers?.customer;
 
         if (!data) {
@@ -55,9 +49,46 @@ const fetchCustomers = async () => {
             return;
         }
 
-        // Si l'API renvoie un seul client, fast-xml-parser peut renvoyer un objet au lieu d'un tableau.
-        // On force le format tableau pour le v-for du template.
-        customers.value = Array.isArray(data) ? data : [data];
+        // On force le format tableau
+        const listeClients = Array.isArray(data) ? data : [data];
+        customers.value = listeClients;
+
+        // Boucle sur chaque client pour calculer ses ventes
+        for (let i = 0; i < customers.value.length; i++) {
+            const customer = customers.value[i];
+            
+            try {
+                // Appel API pour les commandes du client i
+                const responseOrders = await api.get('/orders', {
+                    params: { 
+                        'display': 'full',
+                        'filter[id_customer]': customer.id 
+                    }
+                });
+
+                const jsonObjOrders = parser.parse(responseOrders.data);
+                const dataOrders = jsonObjOrders?.prestashop?.orders?.order;
+
+                let totalVentes = 0;
+
+                if (dataOrders) {
+                    // On force en tableau si une seule commande
+                    const listeOrders = Array.isArray(dataOrders) ? dataOrders : [dataOrders];
+                    
+                    // On additionne les totaux payés
+                    for (let j = 0; j < listeOrders.length; j++) {
+                        totalVentes = totalVentes + parseFloat(listeOrders[j].total_paid_real);
+                    }
+                }
+
+                // On ajoute la nouvelle propriété au client
+                customer.ventes = totalVentes;
+
+            } catch (errOrder) {
+                console.error("Erreur commandes client:", customer.id);
+                customer.ventes = 0;
+            }
+        }
 
     } catch (err) {
         error.value = "Erreur lors de la récupération ou du traitement des données.";
@@ -73,11 +104,11 @@ onMounted(fetchCustomers);
 <template>
     <div :class="customer_id || create_customer ? 'flou' : ''">
         <h2>Liste des clients</h2>
-        
+
         <button @click="create_customer = true">Ajouter un client</button>
 
         <Loading v-if="loading" message="Chargement des clients..." />
-        
+
         <table v-else border="1">
             <thead>
                 <tr>
@@ -97,7 +128,7 @@ onMounted(fetchCustomers);
                     <td>{{ customer.lastname }}</td>
                     <td>{{ customer.firstname }}</td>
                     <td>{{ customer.email }}</td>
-                    <td>{{ customer.max_payment_days }}</td>
+                    <td>{{ customer.ventes }}</td>
                     <td>
                         <span :style="{ color: customer.active ? 'green' : 'red' }">
                             {{ customer.active ? 'Oui' : 'Non' }}
@@ -108,17 +139,16 @@ onMounted(fetchCustomers);
                 </tr>
             </tbody>
         </table>
-        
+
         <Warning :warning="warning" v-if="warning" />
         <Error :error="error" v-if="error" />
     </div>
-    <Detailscustomer v-if="customer_id" v-model="customer_id"/>
-    <NewCustomer v-if="create_customer" v-model="create_customer"/>
+    <Detailscustomer v-if="customer_id" v-model="customer_id" />
+    <NewCustomer v-if="create_customer" v-model="create_customer" />
 </template>
 
 <style scoped>
-
-.flou{
+.flou {
     filter: blur(5px);
 }
 
