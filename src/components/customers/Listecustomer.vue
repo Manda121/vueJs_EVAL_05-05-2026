@@ -71,7 +71,7 @@ onMounted(fetchCustomers);
 </script>
 
 <template>
-    <div :class="customer_id ? 'flou' : ''">
+    <div :class="customer_id || create_customer ? 'flou' : ''">
         <h2>Liste des clients</h2>
         
         <button @click="create_customer = true">Ajouter un client</button>

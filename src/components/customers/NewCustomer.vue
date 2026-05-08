@@ -7,6 +7,17 @@ const create_customer = defineModel();
 
 const groups = ref([]);
 
+const newcustomer = ref({
+    lastname: '',
+    firstname: '',
+    email: '',
+    password: '',
+    id_default_group: '',
+    active: 0,
+    birthday: '',
+    gender: ''
+});
+
 const fetchgroups = async () => {
 
     const parser = new XMLParser({
@@ -41,16 +52,6 @@ const fetchgroups = async () => {
     }
 };
 
-const newcustomer = ref({
-    lastname: '',
-    firstname: '',
-    email: '',
-    password: '',
-    id_default_group: '',
-    active: 0,
-    birthday: ''
-});
-
 const SaveCustomer = async () => {
     // 1. Initialiser le Builder
     const builder = new XMLBuilder({
@@ -69,7 +70,8 @@ const SaveCustomer = async () => {
                 passwd: newcustomer.value.password, // Nom interne PS
                 id_default_group: newcustomer.value.id_default_group,
                 active: 1, // On l'active par défaut
-                birthday: newcustomer.value.birthday
+                birthday: newcustomer.value.birthday,
+                id_gender: newcustomer.value.gender
             }
         }
     };
@@ -99,16 +101,41 @@ onMounted(fetchgroups);
 </script>
 
 <template>
-    <div>
-        <input type="text" name="firstname" id="" v-model="newcustomer.firstname" placeholder="firstname">
-        <input type="text" name="lastname" id="" v-model="newcustomer.lastname" placeholder="lastname">
-        <input type="email" name="email" id="" v-model="newcustomer.email" placeholder="email">
-        <input type="password" name="password" id="" v-model="newcustomer.password" placeholder="password">
-        <input type="date" name="birthday" id="" v-model="newcustomer.birthday" placeholder="birthday">
-        <select name="id_default_group" id="" v-model="newcustomer.id_default_group">
-            <option v-for="group in groups" :value="group.id">{{ group.name.language[0]}}</option>
-        </select>
+    <div class="popop">
+
+        <button @click="create_customer = null">X</button>
+
+        <input type="radio" name="gender" id="male" value="1" v-model="newcustomer.gender">
+        <label for="male">Male</label>
+        <input type="radio" name="gender" id="female" value="2" v-model="newcustomer.gender">
+        <label for="female">Female</label> <br>
+        <input type="text" name="firstname" id="" v-model="newcustomer.firstname" placeholder="firstname"> <br>
+        <input type="text" name="lastname" id="" v-model="newcustomer.lastname" placeholder="lastname"> <br>
+        <input type="email" name="email" id="" v-model="newcustomer.email" placeholder="email"> <br>
+        <input type="password" name="password" id="" v-model="newcustomer.password" placeholder="password"> <br>
+        <input type="date" name="birthday" id="" v-model="newcustomer.birthday" placeholder="birthday"> <br>
+        <select name="id_default_group" id="" v-model="newcustomer.id_default_group"> <br>
+            <option v-for="group in groups" :value="group.id">{{ group.name.language[0] }}</option>
+        </select> <br>
 
         <button @click="SaveCustomer">Create Customer</button>
     </div>
 </template>
+
+<style scoped>
+.popop {
+    position: fixed;
+    width: 70%;
+    justify-content: center;
+    text-align: center;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+    position: absolute;
+}
+</style>
