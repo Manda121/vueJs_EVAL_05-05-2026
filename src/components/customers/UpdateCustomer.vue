@@ -62,7 +62,7 @@ const fetchCustomer = async () => {
         // On force le format tableau pour le v-for du template.
         newcustomer.value = data;
 
-        selectedGroups.value = Array.isArray(newcustomer.value.associations?.groups?.group) ? newcustomer.value.associations?.groups?.group : [];
+        selectedGroups.value = Array.isArray(newcustomer.value.associations?.groups?.group) ? newcustomer.value.associations?.groups?.group : [newcustomer.value.associations?.groups?.group];
         selectedGroups.value = selectedGroups.value.map(g => g.id);
         console.log("Client chargé:", newcustomer.value);
 
@@ -163,12 +163,12 @@ onMounted(fetchCustomer);
             <input type="checkbox">
             Tout sélectionner
         </label>
-        <div class="group-list">
+        <!-- <div class="group-list">
             <label v-for="group in groups" :key="group.id">
                 <input type="checkbox" :value="group.id" v-model="selectedGroups">
                 {{ Array.isArray(group.name.language) ? group.name.language[0] : group.name.language }}
             </label>
-        </div>
+        </div> -->
 
         <ListGroup v-model="selectedGroups" />
 

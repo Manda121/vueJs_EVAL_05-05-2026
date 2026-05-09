@@ -6,7 +6,7 @@ import ListGroup from '../groups/ListGroup.vue';
 
 const create_customer = defineModel();
 const groups = ref([]);
-const selectedGroups = ref([3]); // Par défaut groupe 'Client'
+const selectedGroups = ref([]); // Par défaut groupe 'Client'
 
 const newcustomer = ref({
     lastname: '',
