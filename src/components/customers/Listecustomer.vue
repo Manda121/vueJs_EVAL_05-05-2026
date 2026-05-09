@@ -8,6 +8,7 @@ import Error from '../inc/Error.vue';
 
 import Detailscustomer from './Detailscustomer.vue';
 import NewCustomer from './NewCustomer.vue';
+import UpdateCustomer from './UpdateCustomer.vue';
 
 const customers = ref([]);
 const loading = ref(true);
@@ -15,6 +16,7 @@ const warning = ref(null);
 const error = ref(null);
 
 const customer_id = ref(null);
+const customer_id_upd = ref(null);
 
 const create_customer = ref(false);
 
@@ -98,11 +100,29 @@ const fetchCustomers = async () => {
     }
 };
 
+const direction = ref(1);
+
+function trie(champ) {
+    // À chaque clic, on multiplie par -1 (ça bascule entre 1 et -1)
+    direction.value = direction.value * -1;
+
+    customers.value.sort((a, b) => {
+        // On compare les deux valeurs
+        if (a[champ] < b[champ]) {
+            return -1 * direction.value;
+        }
+        if (a[champ] > b[champ]) {
+            return 1 * direction.value;
+        }
+        return 0;
+    });
+}
+
 onMounted(fetchCustomers);
 </script>
 
 <template>
-    <div :class="customer_id || create_customer ? 'flou' : ''">
+    <div :class="customer_id || create_customer || customer_id_upd ? 'flou' : ''">
         <h2>Liste des clients</h2>
 
         <button @click="create_customer = true">Ajouter un client</button>
@@ -112,30 +132,36 @@ onMounted(fetchCustomers);
         <table v-else border="1">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Nom</th>
-                    <th>Prénom</th>
-                    <th>Email</th>
-                    <th>Ventes</th>
-                    <th>Actif</th>
-                    <th>Inscription</th>
-                    <th>Action</th>
+                    <th @click="trie('id')">ID</th>
+                    <th @click="trie('lastname')">Nom</th>
+                    <th @click="trie('firstname')">Prénom</th>
+                    <th @click="trie('email')">Email</th>
+                    <th @click="trie('ventes')">Ventes</th>
+                    <th @click="trie('active')">Actif</th>
+                    <th @click="trie('newsletter')">Lettre d'information</th>
+                    <th @click="trie('date_add')" >Inscription</th>
+                    <th >Modifier</th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="customer in customers" :key="customer.id">
-                    <td>{{ customer.id }}</td>
-                    <td>{{ customer.lastname }}</td>
-                    <td>{{ customer.firstname }}</td>
-                    <td>{{ customer.email }}</td>
-                    <td>{{ customer.ventes }}</td>
-                    <td>
+                <tr v-for="customer in customers" :key="customer.id" style="cursor: grab;">
+                    <td @click="customer_id = customer.id">{{ customer.id }}</td>
+                    <td @click="customer_id = customer.id">{{ customer.lastname }}</td>
+                    <td @click="customer_id = customer.id">{{ customer.firstname }}</td>
+                    <td @click="customer_id = customer.id">{{ customer.email }}</td>
+                    <td @click="customer_id = customer.id">{{ customer.ventes }}</td>
+                    <td @click="customer_id = customer.id">
                         <span :style="{ color: customer.active ? 'green' : 'red' }">
                             {{ customer.active ? 'Oui' : 'Non' }}
                         </span>
                     </td>
-                    <td>{{ customer.date_add }}</td>
-                    <td><button @click="customer_id = customer.id">Gérer</button></td>
+                    <td @click="customer_id = customer.id">
+                        <span :style="{ color: customer.newsletter ? 'green' : 'red' }">
+                            {{ customer.newsletter ? 'Oui' : 'Non' }}
+                        </span>
+                    </td>
+                    <td @click="customer_id = customer.id">{{ customer.date_add }}</td>
+                    <td><button @click="customer_id_upd = customer.id">Modifier</button></td>
                 </tr>
             </tbody>
         </table>
@@ -144,6 +170,7 @@ onMounted(fetchCustomers);
         <Error :error="error" v-if="error" />
     </div>
     <Detailscustomer v-if="customer_id" v-model="customer_id" />
+    <UpdateCustomer v-if="customer_id_upd" v-model="customer_id_upd" />
     <NewCustomer v-if="create_customer" v-model="create_customer" />
 </template>
 
