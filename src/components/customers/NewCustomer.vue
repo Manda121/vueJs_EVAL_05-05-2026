@@ -2,10 +2,11 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
+import ListGroup from '../groups/ListGroup.vue';
 
 const create_customer = defineModel();
 const groups = ref([]);
-const selectedGroups = ref([3]); // Par défaut groupe 'Client'
+const selectedGroups = ref([]); // Par défaut groupe 'Client'
 
 const newcustomer = ref({
     lastname: '',
@@ -137,6 +138,9 @@ onMounted(fetchgroups);
             <input type="checkbox" v-model="allSelected">
             Tout sélectionner
         </label>
+
+        <ListGroup v-model="selectedGroups" />
+
         <div class="group-list">
             <label v-for="group in groups" :key="group.id">
                 <input type="checkbox" :value="group.id" v-model="selectedGroups">
