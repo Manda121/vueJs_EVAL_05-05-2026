@@ -6,6 +6,8 @@ import Loading from '../inc/Loading.vue';
 import Warning from '../inc/Warning.vue';
 import Error from '../inc/Error.vue';
 
+import ListeGroup from '../groups/ListGroup.vue';
+
 const customer = ref([]);
 const loading = ref(true);
 const warning = ref(null);
@@ -162,6 +164,8 @@ onMounted(fetchgroups);
                 </tr>
             </tbody>
         </table>
+
+        <ListeGroup :v-model="selectedGroupIds" />
 
         <ul>group</ul>
         <li v-for="group in groups" :key="group.id">
