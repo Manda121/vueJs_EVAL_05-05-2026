@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
+import ListGroup from '../groups/ListGroup.vue';
 
 
 import Loading from '../inc/Loading.vue';
@@ -10,31 +11,13 @@ import Error from '../inc/Error.vue';
 
 const update_customer = defineModel();
 const groups = ref([]);
-const selectedGroups = ref([3]); // Par défaut groupe 'Client'
+const selectedGroups = ref([]); // Par défaut groupe 'Client'
 
 const loading = ref(true);
 const warning = ref(null);
 const error = ref(null);
 
 const newcustomer = ref({});
-
-// Cette propriété gère l'état de la case "Tout sélectionner"
-const allSelected = computed({
-    // La case est cochée si tous les groupes sont dans selectedGroups
-    get() {
-        return groups.value.length > 0 && selectedGroups.value.length === groups.value.length;
-    },
-    // Quand on clique sur la case
-    set(value) {
-        if (value) {
-            // On remplit le tableau avec tous les IDs des groupes
-            selectedGroups.value = groups.value.map(g => g.id);
-        } else {
-            // On vide le tableau
-            selectedGroups.value = [];
-        }
-    }
-});
 
 const parser = new XMLParser();
 const api = axios.create({
@@ -79,6 +62,8 @@ const fetchCustomer = async () => {
         // On force le format tableau pour le v-for du template.
         newcustomer.value = data;
 
+        selectedGroups.value = Array.isArray(newcustomer.value.associations?.groups?.group) ? newcustomer.value.associations?.groups?.group : [];
+        selectedGroups.value = selectedGroups.value.map(g => g.id);
         console.log("Client chargé:", newcustomer.value);
 
     } catch (err) {
@@ -175,7 +160,7 @@ onMounted(fetchCustomer);
         <p>Accès aux groupes :</p>
         <label
             style="font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 5px; width: 100%; text-align: left;">
-            <input type="checkbox" v-model="allSelected">
+            <input type="checkbox">
             Tout sélectionner
         </label>
         <div class="group-list">
@@ -184,6 +169,8 @@ onMounted(fetchCustomer);
                 {{ Array.isArray(group.name.language) ? group.name.language[0] : group.name.language }}
             </label>
         </div>
+
+        <ListGroup v-model="selectedGroups" />
 
         <button @click="UpdateCustomer">Mettre à jour le client</button>
         </div>

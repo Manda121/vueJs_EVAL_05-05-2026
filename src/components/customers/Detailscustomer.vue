@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { XMLParser } from 'fast-xml-parser';
 import Loading from '../inc/Loading.vue';
@@ -16,47 +16,18 @@ const error = ref(null);
 const id_customer = defineModel();
 
 const groups = ref([]);
-
-const selectedGroupIds2 = computed(() => {
-    const currentCustomer = customer.value;
+const selectedGroupIds = ref([]);
+ 
+const getCustomerGroupIds = (currentCustomer) => {
     const assocGroups = currentCustomer?.associations?.groups?.group;
+
     if (!assocGroups) {
-        return new Set();
+        return [];
     }
 
     const assocArray = Array.isArray(assocGroups) ? assocGroups : [assocGroups];
-    return new Set(assocArray.map((group) => String(group.id)));
-});
-
-const selectedGroupIds = computed(() => {
-    const currentCustomer = customer.value;
-    const assocGroups = currentCustomer?.associations?.groups?.group;
-
-    // 1. Si pas de groupes, on renvoie une liste vide tout de suite
-    if (!assocGroups) {
-        return []; 
-    }
-
-    // 2. On s'assure d'avoir un tableau (le "if" que tu connais bien)
-    const assocArray = Array.isArray(assocGroups) ? assocGroups : [assocGroups];
-
-    // 3. ON REMPLACE LE MAP PAR UNE BOUCLE CLASSIQUE
-    let maListeDids = []; // On crée un panier vide
-
-    for (let i = 0; i < assocArray.length; i++) {
-        // On prend l'objet groupe à la position i
-        let unGroupe = assocArray[i]; 
-        
-        // On extrait son ID et on le transforme en texte
-        let lId = String(unGroupe.id);
-        
-        // On l'ajoute dans notre panier
-        maListeDids.push(lId);
-    }
-
-    // 4. On renvoie le panier rempli
-    return maListeDids;
-});
+    return assocArray.map((group) => String(group.id));
+};
 
 // Configuration du parseur
 const parser = new XMLParser({});
@@ -81,7 +52,7 @@ const fetchgroups = async () => {
         const response = await api2.get('/groups', { params: { 'display': 'full' } });
         const jsonObj = parser.parse(response.data);
         const data = jsonObj?.prestashop?.groups?.group;
-        groups.value = data;
+        groups.value = Array.isArray(data) ? data : [data];
     } catch (err) {
         console.error(err);
     }
@@ -112,6 +83,7 @@ const fetchCustomer = async () => {
         // Si l'API renvoie un seul client, fast-xml-parser peut renvoyer un objet au lieu d'un tableau.
         // On force le format tableau pour le v-for du template.
         customer.value = data;
+        selectedGroupIds.value = getCustomerGroupIds(data);
 
         console.log("Client chargé:", customer.value);
 
@@ -165,13 +137,13 @@ onMounted(fetchgroups);
             </tbody>
         </table>
 
-        <ListeGroup :v-model="selectedGroupIds" />
+        <ListeGroup v-model="selectedGroupIds" />
 
-        <ul>group</ul>
+        <!-- <ul>group</ul>
         <li v-for="group in groups" :key="group.id">
             <input type="checkbox" :value="group.id" :checked="selectedGroupIds.includes(String(group.id))" />
             {{ Array.isArray(group.name.language) ? group.name.language[0] : group.name.language }}
-        </li>
+        </li> -->
 
         <Warning :warning="warning" v-if="warning" />
         <Error :error="error" v-if="error" />

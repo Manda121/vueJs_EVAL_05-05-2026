@@ -1,13 +1,13 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import axios from 'axios';
-import { XMLParser, XMLBuilder } from 'fast-xml-parser';
+import { XMLParser } from 'fast-xml-parser';
 
 const parser = new XMLParser();
 
 const selectedGroupIds = defineModel();
 
-const groups = ref();
+const groups = ref([]);
 
 const api = axios.create({
     baseURL: '/api',
@@ -33,7 +33,7 @@ onMounted(fetchgroups);
         <h2>Liste des groupes</h2>
         <ul>
             <li v-for="group in groups" :key="group.id">
-                <input type="checkbox" :value="group.id" v-model="selectedGroupIds" v-if="selectedGroupIds" :checked="selectedGroupIds.includes(String(group.id))">
+                <input v-if="selectedGroupIds" type="checkbox" :value="String(group.id)" v-model="selectedGroupIds" :checked="selectedGroupIds.includes(String(group.id))">
                 {{ group.name.language[0] }}
             </li>
         </ul>
