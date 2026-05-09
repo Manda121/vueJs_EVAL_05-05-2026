@@ -3,10 +3,10 @@ import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 
-
 import Loading from '../inc/Loading.vue';
 import Warning from '../inc/Warning.vue';
 import Error from '../inc/Error.vue';
+import ListeGroup from '../groups/ListeGroup.vue';
 
 const update_customer = defineModel();
 const groups = ref([]);
@@ -53,6 +53,23 @@ const fetchgroups = async () => {
     }
 };
 
+const setSelectedGroupsFromCustomer = () => {
+    const assocGroups = newcustomer.value?.associations?.groups?.group;
+    if (!assocGroups) {
+        selectedGroups.value = [];
+        return;
+    }
+
+    const assocArray = Array.isArray(assocGroups) ? assocGroups : [assocGroups];
+    let ids = [];
+
+    for (let i = 0; i < assocArray.length; i++) {
+        ids.push(assocArray[i].id);
+    }
+
+    selectedGroups.value = ids;
+};
+
 const fetchCustomer = async () => {
     loading.value = true;
     error.value = null;
@@ -78,6 +95,7 @@ const fetchCustomer = async () => {
         // Si l'API renvoie un seul client, fast-xml-parser peut renvoyer un objet au lieu d'un tableau.
         // On force le format tableau pour le v-for du template.
         newcustomer.value = data;
+        setSelectedGroupsFromCustomer();
 
         console.log("Client chargé:", newcustomer.value);
 
@@ -178,12 +196,7 @@ onMounted(fetchCustomer);
             <input type="checkbox" v-model="allSelected">
             Tout sélectionner
         </label>
-        <div class="group-list">
-            <label v-for="group in groups" :key="group.id">
-                <input type="checkbox" :value="group.id" v-model="selectedGroups">
-                {{ Array.isArray(group.name.language) ? group.name.language[0] : group.name.language }}
-            </label>
-        </div>
+        <ListeGroup v-model="selectedGroups" :groups="groups" />
 
         <button @click="UpdateCustomer">Mettre à jour le client</button>
         </div>
@@ -207,10 +220,4 @@ onMounted(fetchCustomer);
     z-index: 1000;
 }
 
-.group-list {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    margin: 10px 0;
-}
 </style>

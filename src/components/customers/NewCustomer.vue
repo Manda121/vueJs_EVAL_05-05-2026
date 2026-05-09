@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
+import ListeGroup from '../groups/ListeGroup.vue';
 
 const create_customer = defineModel();
 const groups = ref([]);
@@ -137,12 +138,7 @@ onMounted(fetchgroups);
             <input type="checkbox" v-model="allSelected">
             Tout sélectionner
         </label>
-        <div class="group-list">
-            <label v-for="group in groups" :key="group.id">
-                <input type="checkbox" :value="group.id" v-model="selectedGroups">
-                {{ Array.isArray(group.name.language) ? group.name.language[0] : group.name.language }}
-            </label>
-        </div>
+        <ListeGroup v-model="selectedGroups" :groups="groups" />
 
         <button @click="SaveCustomer">Créer le client</button>
     </div>
@@ -162,10 +158,4 @@ onMounted(fetchgroups);
     z-index: 1000;
 }
 
-.group-list {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    margin: 10px 0;
-}
 </style>

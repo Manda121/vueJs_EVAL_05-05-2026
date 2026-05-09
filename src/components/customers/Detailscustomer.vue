@@ -5,6 +5,7 @@ import { XMLParser } from 'fast-xml-parser';
 import Loading from '../inc/Loading.vue';
 import Warning from '../inc/Warning.vue';
 import Error from '../inc/Error.vue';
+import ListeGroup from '../groups/ListeGroup.vue';
 
 const customer = ref([]);
 const loading = ref(true);
@@ -14,17 +15,6 @@ const error = ref(null);
 const id_customer = defineModel();
 
 const groups = ref([]);
-
-const selectedGroupIds2 = computed(() => {
-    const currentCustomer = customer.value;
-    const assocGroups = currentCustomer?.associations?.groups?.group;
-    if (!assocGroups) {
-        return new Set();
-    }
-
-    const assocArray = Array.isArray(assocGroups) ? assocGroups : [assocGroups];
-    return new Set(assocArray.map((group) => String(group.id)));
-});
 
 const selectedGroupIds = computed(() => {
     const currentCustomer = customer.value;
@@ -56,6 +46,28 @@ const selectedGroupIds = computed(() => {
     return maListeDids;
 });
 
+const customerGroups = computed(() => {
+    if (!groups.value || groups.value.length === 0) {
+        return [];
+    }
+
+    let groupesAssocies = [];
+    let ids = selectedGroupIds.value;
+
+    for (let i = 0; i < groups.value.length; i++) {
+        let group = groups.value[i];
+
+        for (let j = 0; j < ids.length; j++) {
+            if (String(group.id) === ids[j]) {
+                groupesAssocies.push(group);
+                break;
+            }
+        }
+    }
+
+    return groupesAssocies;
+});
+
 // Configuration du parseur
 const parser = new XMLParser({});
 
@@ -79,7 +91,7 @@ const fetchgroups = async () => {
         const response = await api2.get('/groups', { params: { 'display': 'full' } });
         const jsonObj = parser.parse(response.data);
         const data = jsonObj?.prestashop?.groups?.group;
-        groups.value = data;
+        groups.value = Array.isArray(data) ? data : (data ? [data] : []);
     } catch (err) {
         console.error(err);
     }
@@ -163,11 +175,8 @@ onMounted(fetchgroups);
             </tbody>
         </table>
 
-        <ul>group</ul>
-        <li v-for="group in groups" :key="group.id">
-            <input type="checkbox" :value="group.id" :checked="selectedGroupIds.includes(String(group.id))" />
-            {{ Array.isArray(group.name.language) ? group.name.language[0] : group.name.language }}
-        </li>
+        <p>Groupes du client :</p>
+        <ListeGroup :groups="customerGroups" :show-checkboxes="false" />
 
         <Warning :warning="warning" v-if="warning" />
         <Error :error="error" v-if="error" />
