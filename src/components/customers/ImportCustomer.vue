@@ -19,7 +19,7 @@ const done = ref(0);
 
 const parser = new XMLParser({
     ignoreAttributes: false,
-    attributeNamePrefix: '',
+    attributeNamePrefix: '@_',
     parseTagValue: true,
     trimValues: true
 });
@@ -132,23 +132,28 @@ async function createGroupIfMissing(name) {
     const key = name.trim().toLowerCase();
     if (groupCache.value[key]) return groupCache.value[key];
 
-    const builder = new XMLBuilder({ format: true });
+    const builder = new XMLBuilder({ format: true, attributeNamePrefix: '@_', ignoreAttributes: false });
     const groupData = {
-        prestashop: {
-            group: {
-                name: {
-                    language: {
-                        '@_id': defaultLangId,
-                        '#text': name
+    prestashop: {
+        // L'attribut xmlns est souvent nécessaire pour le POST
+        "@_xmlns:xlink": "http://www.w3.org/1999/xlink",
+        group: {
+            name: {
+                // On utilise un tableau pour gérer les langues
+                language: [
+                    {
+                        "@_id": defaultLangId, // Sera transformé en id="..."
+                        "#text": name          // Contenu de la balise
                     }
-                },
-                price_display_method: 0,
-                show_prices: 1
-            }
+                ]
+            },
+            price_display_method: 0,
+            show_prices: 1
         }
-    };
+    }
+};
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n${builder.build(groupData)}`;
-
+    console.log("new group: "+xml);
     const api = axios.create({
         baseURL: '/api',
         headers: {
@@ -157,15 +162,30 @@ async function createGroupIfMissing(name) {
         }
     });
 
-    const response = await api.post('/groups', xml);
-    const jsonObj = parser.parse(response.data);
-    const newId = jsonObj?.prestashop?.group?.id;
-    if (newId) {
-        groupCache.value[key] = newId;
-        return newId;
-    }
+    try {
+        const response = await api.post('/groups', xml);
+        // Log raw response for debugging
+        console.log('createGroupIfMissing response status:', response.status);
+        console.log('createGroupIfMissing response data:', response.data);
 
-    return null;
+        const jsonObj = parser.parse(response.data);
+        const newId = jsonObj?.prestashop?.group?.id;
+        if (newId) {
+            groupCache.value[key] = newId;
+            return newId;
+        }
+
+        return null;
+    } catch (err) {
+        // If server returned a response, log details to help debugging
+        if (err.response) {
+            console.error('API POST /groups failed', err.response.status, err.response.data);
+        } else {
+            console.error('API POST /groups error', err);
+        }
+        // Re-throw so caller can handle and display the error
+        throw err;
+    }
 }
 
 async function customerExists(email, birthday) {
@@ -191,7 +211,7 @@ async function customerExists(email, birthday) {
 }
 
 function buildCustomerXml(customer, groups) {
-        const builder = new XMLBuilder({ format: true });
+        const builder = new XMLBuilder({ format: true, attributeNamePrefix: '@_', ignoreAttributes: false });
         const customerData = {
                 prestashop: {
                         customer: {
@@ -367,8 +387,14 @@ async function importCustomers() {
             done.value++;
         }
     } catch (err) {
-        error.value = 'Erreur lors de l\'import.';
-        console.error(err);
+        // Provide more useful error info including server response when available
+        if (err && err.response) {
+            error.value = `Erreur lors de l'import. Status ${err.response.status}: ${JSON.stringify(err.response.data)}`;
+            console.error('importCustomers error response:', err.response.status, err.response.data);
+        } else {
+            error.value = 'Erreur lors de l\'import. ' + (err && err.message ? err.message : err);
+            console.error(err);
+        }
     } finally {
         loading.value = false;
     }
@@ -376,7 +402,7 @@ async function importCustomers() {
 </script>
 
 <template>
-    <div>
+    <div class="popop">
         <button @click="import_csv = false">X</button>
         <h1>Importer des clients</h1>
 
@@ -415,3 +441,18 @@ async function importCustomers() {
         </table>
     </div>
 </template>
+
+<style scoped>
+.popop {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+    position: absolute;
+}
+</style>

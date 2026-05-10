@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import Customer from '../views/customers/Customer.vue'
 import CustomerDetails from '../views/customers/CustomerDetails.vue'
+import Reinitialisation from '../views/inc/Reinitialisation.vue'
 
 const routes = [
   {
@@ -29,7 +30,12 @@ const routes = [
     path: '/customer/:id',
     name: 'CustomerDetail',
     component: CustomerDetails
-  }
+  },
+  {
+    path: '/reinitialisation',
+    name: 'Reinitialisation',
+    component: Reinitialisation
+  },
   // {
   //   path: '/',
   //   name: 'dashboard',
