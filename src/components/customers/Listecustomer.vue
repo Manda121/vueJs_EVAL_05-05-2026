@@ -9,6 +9,7 @@ import Error from '../inc/Error.vue';
 import Detailscustomer from './Detailscustomer.vue';
 import NewCustomer from './NewCustomer.vue';
 import UpdateCustomer from './UpdateCustomer.vue';
+import ImportCustomer from './ImportCustomer.vue';
 
 const customers = ref([]);
 const loading = ref(true);
@@ -17,6 +18,7 @@ const error = ref(null);
 
 const customer_id = ref(null);
 const customer_id_upd = ref(null);
+const import_csv = ref(false);
 
 const create_customer = ref(false);
 
@@ -122,10 +124,11 @@ onMounted(fetchCustomers);
 </script>
 
 <template>
-    <div :class="customer_id || create_customer || customer_id_upd ? 'flou' : ''">
+    <div :class="customer_id || create_customer || customer_id_upd || import_csv ? 'flou' : ''">
         <h2>Liste des clients</h2>
 
         <button @click="create_customer = true">Ajouter un client</button>
+        <button @click="import_csv = true">Importer des clients</button>
 
         <Loading v-if="loading" message="Chargement des clients..." />
 
@@ -172,6 +175,7 @@ onMounted(fetchCustomers);
     <Detailscustomer v-if="customer_id" v-model="customer_id" />
     <UpdateCustomer v-if="customer_id_upd" v-model="customer_id_upd" />
     <NewCustomer v-if="create_customer" v-model="create_customer" />
+    <ImportCustomer v-if="import_csv" v-model="import_csv" />
 </template>
 
 <style scoped>
