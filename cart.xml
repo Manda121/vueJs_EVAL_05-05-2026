@@ -1,79 +1,76 @@
 This XML file does not appear to have any style information associated with it. The document tree is shown below.
 <prestashop xmlns:xlink="http://www.w3.org/1999/xlink">
 <cart>
-<id>
-<![CDATA[ ]]>
-</id>
-<id_address_delivery>
+<id_address_delivery format="isUnsignedId">
 <![CDATA[ ]]>
 </id_address_delivery>
-<id_address_invoice>
+<id_address_invoice format="isUnsignedId">
 <![CDATA[ ]]>
 </id_address_invoice>
-<id_currency>
+<id_currency required="true" format="isUnsignedId">
 <![CDATA[ ]]>
 </id_currency>
-<id_customer>
+<id_customer format="isUnsignedId">
 <![CDATA[ ]]>
 </id_customer>
-<id_guest>
+<id_guest format="isUnsignedId">
 <![CDATA[ ]]>
 </id_guest>
-<id_lang>
+<id_lang required="true" format="isUnsignedId">
 <![CDATA[ ]]>
 </id_lang>
-<id_shop_group>
+<id_shop_group format="isUnsignedId">
 <![CDATA[ ]]>
 </id_shop_group>
-<id_shop>
+<id_shop format="isUnsignedId">
 <![CDATA[ ]]>
 </id_shop>
-<id_carrier>
+<id_carrier format="isUnsignedId">
 <![CDATA[ ]]>
 </id_carrier>
-<recyclable>
+<recyclable format="isBool">
 <![CDATA[ ]]>
 </recyclable>
-<gift>
+<gift format="isBool">
 <![CDATA[ ]]>
 </gift>
-<gift_message>
+<gift_message maxSize="4194303" format="isCleanHtml">
 <![CDATA[ ]]>
 </gift_message>
-<mobile_theme>
+<mobile_theme format="isBool">
 <![CDATA[ ]]>
 </mobile_theme>
-<delivery_option>
+<delivery_option maxSize="4194303">
 <![CDATA[ ]]>
 </delivery_option>
-<secure_key>
+<secure_key maxSize="32">
 <![CDATA[ ]]>
 </secure_key>
-<allow_seperated_package>
+<allow_seperated_package format="isBool">
 <![CDATA[ ]]>
 </allow_seperated_package>
-<date_add>
+<date_add format="isDate">
 <![CDATA[ ]]>
 </date_add>
-<date_upd>
+<date_upd format="isDate">
 <![CDATA[ ]]>
 </date_upd>
 <associations>
-<cart_rows>
+<cart_rows nodeType="cart_row" virtualEntity="true">
 <cart_row>
-<id_product>
+<id_product xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/products/" required="true">
 <![CDATA[ ]]>
 </id_product>
-<id_product_attribute>
+<id_product_attribute xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/combinations/" required="true">
 <![CDATA[ ]]>
 </id_product_attribute>
-<id_address_delivery>
+<id_address_delivery xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/addresses/" required="true">
 <![CDATA[ ]]>
 </id_address_delivery>
-<id_customization>
+<id_customization xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/customizations/">
 <![CDATA[ ]]>
 </id_customization>
-<quantity>
+<quantity required="true">
 <![CDATA[ ]]>
 </quantity>
 </cart_row>

@@ -5,16 +5,19 @@ import { XMLParser } from 'fast-xml-parser';
 import Loading from '../../inc/Loading.vue';
 import Warning from '../../inc/Warning.vue';
 import Error from '../../inc/Error.vue';
+import AddToCartForm from './AddToCartForm.vue';
 
 const product = ref(null);
 const loading = ref(true);
 const warning = ref(null);
 const error = ref(null);
+const success = ref(null);
 
 const id_product = defineModel();
 
 const optionGroups = ref([]);
 const selectedOptionValueIds = ref({});
+const quantity = ref(1);
 
 const parser = new XMLParser({});
 
@@ -24,6 +27,16 @@ const api = axios.create({
         'Authorization': 'Basic ' + btoa('4XZXKK1Y8MMXSCYUMHJZ8J26JUY4W8TB' + ':')
     }
 });
+
+const cartContext = {
+    idCustomer: '1',
+    idCurrency: '1',
+    idLang: '1',
+    idShop: '1',
+    idShopGroup: '1',
+    idAddressDelivery: '1',
+    idAddressInvoice: '1'
+};
 
 const pickLangValue = (node) => {
     if (!node) return '';
@@ -141,7 +154,9 @@ const fetchOptionValues = async (ids) => {
 
         // Initialiser les menus déroulants
         for (const group of optionGroups.value) {
-            selectedOptionValueIds.value[group.id] = '';
+            if (!selectedOptionValueIds.value[group.id]) {
+                selectedOptionValueIds.value[group.id] = '';
+            }
         }
 
     } catch (err) {
@@ -154,6 +169,7 @@ const fetchproduct = async () => {
     loading.value = true;
     error.value = null;
     warning.value = null;
+    success.value = null;
     
     try {
         const response = await api.get('/products/' + id_product.value, {
@@ -196,6 +212,127 @@ const fetchproduct = async () => {
     }
 };
 
+const buildCartXml = ({
+    idProduct,
+    idProductAttribute,
+    qty
+}) => {
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<prestashop>
+  <cart>
+    <id_customer>${cartContext.idCustomer}</id_customer>
+    <id_address_delivery>${cartContext.idAddressDelivery}</id_address_delivery>
+    <id_address_invoice>${cartContext.idAddressInvoice}</id_address_invoice>
+    <id_currency>${cartContext.idCurrency}</id_currency>
+    <id_lang>${cartContext.idLang}</id_lang>
+    <id_shop_group>${cartContext.idShopGroup}</id_shop_group>
+    <id_shop>${cartContext.idShop}</id_shop>
+    <associations>
+      <cart_rows>
+        <cart_row>
+          <id_product>${idProduct}</id_product>
+          <id_product_attribute>${idProductAttribute}</id_product_attribute>
+          <id_address_delivery>${cartContext.idAddressDelivery}</id_address_delivery>
+          <quantity>${qty}</quantity>
+        </cart_row>
+      </cart_rows>
+    </associations>
+  </cart>
+</prestashop>`;
+};
+
+const findCombinationId = async () => {
+    const selectedIds = Object.values(selectedOptionValueIds.value)
+        .map((value) => String(value))
+        .filter(Boolean);
+
+    if (selectedIds.length === 0) {
+        return '0';
+    }
+
+    const combinationNodes = normalizeToArray(
+        product.value?.associations?.combinations?.combination
+    );
+    const combinationIds = combinationNodes
+        .map((node) => (typeof node === 'object' ? node.id : node))
+        .filter(Boolean);
+
+    if (combinationIds.length === 0) {
+        return null;
+    }
+
+    const selectedSet = new Set(selectedIds);
+
+    for (const id of combinationIds) {
+        const response = await api.get('/combinations/' + id, { params: { display: 'full' } });
+        const data = parser.parse(response.data)?.prestashop?.combination;
+        if (!data) continue;
+
+        const valueNodes = normalizeToArray(
+            data?.associations?.product_option_values?.product_option_value
+        );
+        const valueIds = valueNodes
+            .map((node) => (typeof node === 'object' ? node.id : node))
+            .filter(Boolean)
+            .map((value) => String(value));
+
+        if (valueIds.length !== selectedSet.size) {
+            continue;
+        }
+
+        const matches = valueIds.every((value) => selectedSet.has(value));
+        if (matches) {
+            return String(data.id || id);
+        }
+    }
+
+    return null;
+};
+
+const addToCart = async () => {
+    error.value = null;
+    warning.value = null;
+    success.value = null;
+
+    if (!product.value) {
+        warning.value = 'Produit non disponible.';
+        return;
+    }
+
+    const missingOption = optionGroups.value.some(
+        (group) => !selectedOptionValueIds.value[group.id]
+    );
+
+    if (missingOption) {
+        warning.value = 'Merci de choisir toutes les options.';
+        return;
+    }
+
+    try {
+        const combinationId = await findCombinationId();
+
+        if (optionGroups.value.length > 0 && !combinationId) {
+            warning.value = 'Aucune combinaison ne correspond aux options choisies.';
+            return;
+        }
+
+        const xml = buildCartXml({
+            idProduct: product.value.id,
+            idProductAttribute: combinationId || '0',
+            qty: quantity.value
+        });
+
+        await api.post('/carts', xml, {
+            headers: { 'Content-Type': 'application/xml' }
+        });
+
+        success.value = 'Produit ajoute au panier.';
+    } catch (err) {
+        error.value = 'Erreur lors de l\'ajout au panier.';
+        console.error('Détails:', err);
+    }
+};
+
 onMounted(fetchproduct);
 </script>
 
@@ -203,27 +340,25 @@ onMounted(fetchproduct);
     <div>
 
         <h2>Details du produit</h2>
-
-        <button @click="id_product = null">X</button>
+        <button @click="$router.push('/front/paniers')">voir le panier</button>
 
         <Loading v-if="loading" message="Chargement du produit..." />
 
         <div v-else-if="product">
             <h3>{{ pickLangValue(product.name) }}</h3>
 
-            <p><strong>Prix:</strong> {{ product.id }}</p>
+            <p><strong>Prix:</strong> {{ product.price }}</p>
             <p><strong>Reference:</strong> {{ product.reference }}</p>
             <p><strong>Description:</strong> {{ pickLangValue(product.description_short) }}</p>
 
-            <div v-for="group in optionGroups" :key="group.id">
-                <label :for="'option-' + group.id">{{ group.name }}</label>
-                <select :id="'option-' + group.id" v-model="selectedOptionValueIds[group.id]">
-                    <option value="">Selectionner</option>
-                    <option v-for="option in group.values" :key="option.id" :value="option.id">
-                        {{ option.name || option.id }}
-                    </option>
-                </select>
-            </div>
+            <AddToCartForm
+                v-model:selectedOptionValueIds="selectedOptionValueIds"
+                v-model:quantity="quantity"
+                :option-groups="optionGroups"
+                @add-to-cart="addToCart"
+            />
+
+            <p v-if="success">{{ success }}</p>
         </div>
 
         <Warning :warning="warning" v-if="warning" />
