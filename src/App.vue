@@ -1,4 +1,9 @@
+<script setup>
+import Header from './components/backoffice/inc/Header.vue';
+</script>
+
 <template>
+  <Header />
   <div id="app">
     <router-view />
   </div>
