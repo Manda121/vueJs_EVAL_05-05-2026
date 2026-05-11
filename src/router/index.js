@@ -2,6 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import Customer from '../views/customers/Customer.vue'
 import CustomerDetails from '../views/customers/CustomerDetails.vue'
+import Reinitialisation from '../views/inc/Reinitialisation.vue'
+import LoginBO from '../views/backoffice/login/Login.vue'
+import ListeProduitsFO from '../views/frontoffice/produits/ListeProduits.vue'
+import DetailsProduitFO from '../views/frontoffice/produits/DetailsProduit.vue'
+import ListePanierFO from '../views/frontoffice/panier/ListePanier.vue'
 
 const routes = [
   {
@@ -15,7 +20,7 @@ const routes = [
     component: Home
   },
 
-    {
+  {
     path: '/home/:id',
     name: 'id',
     component: Home
@@ -24,11 +29,36 @@ const routes = [
     path: '/customer',
     name: 'customer',
     component: Customer
-  }, 
-    {
+  },
+  {
     path: '/customer/:id',
     name: 'CustomerDetail',
     component: CustomerDetails
+  },
+  {
+    path: '/reinitialisation',
+    name: 'Reinitialisation',
+    component: Reinitialisation
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: LoginBO
+  },
+  {
+    path: '/front/produits',
+    name: 'produits_front',
+    component: ListeProduitsFO
+  },
+  {
+    path: '/front/produits/:id',
+    name: 'details_produits_front',
+    component: DetailsProduitFO
+  },
+  {
+    path: '/front/paniers',
+    name: 'panier_front',
+    component: ListePanierFO
   }
   // {
   //   path: '/',
