@@ -4,6 +4,8 @@ import Customer from '../views/customers/Customer.vue'
 import CustomerDetails from '../views/customers/CustomerDetails.vue'
 import Reinitialisation from '../views/inc/Reinitialisation.vue'
 import LoginBO from '../views/backoffice/login/Login.vue'
+import ListeProduitsFO from '../views/frontoffice/produits/ListeProduits.vue'
+import DetailsProduitFO from '../views/frontoffice/produits/DetailsProduit.vue'
 
 const routes = [
   {
@@ -41,6 +43,16 @@ const routes = [
     path: '/login',
     name: 'login',
     component: LoginBO
+  },
+    {
+    path: '/front/',
+    name: 'produits_front',
+    component: ListeProduitsFO
+  },
+      {
+    path: '/front/produits/:id',
+    name: 'details_produits_front',
+    component: DetailsProduitFO
   },
   // {
   //   path: '/',

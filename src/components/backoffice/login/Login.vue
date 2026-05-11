@@ -23,8 +23,6 @@ const parser = new XMLParser({
     textNodeName: "_text"
 });
 
-const employees = ref([]);
-
 const api = axios.create({
     baseURL: '/api',
     headers: {
