@@ -70,7 +70,7 @@ onMounted(fetchProducts);
             <tr v-for="produit in produits">
                 <td>
                     <a :href="'/front/produits/' + produit.id">
-                        <img :src="`http://localhost/prestashop_edition_classic_version_8.2.6/api/images/products/${produit.id}/${produit.id_default_image}`"
+                        <img :src="`http://localhost/prestashop_edition_classic_version_8.2.6/api/images/products/${produit.id}/${produit.id_default_image}?ws_key=4XZXKK1Y8MMXSCYUMHJZ8J26JUY4W8TB`"
                             :alt="`image de ${produit.name.language[0]}`">
                     </a>
                 </td>

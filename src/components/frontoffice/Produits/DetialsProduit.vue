@@ -13,8 +13,8 @@ const error = ref(null);
 
 const id_product = defineModel();
 
-const optionValues = ref([]);
-const selectedOptionValueId = ref('');
+const optionGroups = ref([]);
+const selectedOptionValueIds = ref({});
 
 const parser = new XMLParser({});
 
@@ -44,9 +44,31 @@ const normalizeToArray = (value) => {
     return Array.isArray(value) ? value : [value];
 };
 
+const fetchOptionGroups = async (groupIds) => {
+    if (!groupIds.length) {
+        return {};
+    }
+
+    try {
+        const responses = await Promise.all(
+            groupIds.map((id) => api.get('/product_options/' + id, { params: { display: 'full' } }))
+        );
+
+        return responses.reduce((acc, response) => {
+            const data = parser.parse(response.data)?.prestashop?.product_option;
+            if (!data) return acc;
+            acc[data.id] = pickLangValue(data.name);
+            return acc;
+        }, {});
+    } catch (err) {
+        console.error('Erreur lors du chargement des options:', err);
+        return {};
+    }
+};
+
 const fetchOptionValues = async (ids) => {
     if (!ids.length) {
-        optionValues.value = [];
+        optionGroups.value = [];
         return;
     }
 
@@ -55,19 +77,35 @@ const fetchOptionValues = async (ids) => {
             ids.map((id) => api.get('/product_option_values/' + id, { params: { display: 'full' } }))
         );
 
-        optionValues.value = responses
+        const values = responses
             .map((response) => {
                 const data = parser.parse(response.data)?.prestashop?.product_option_value;
                 if (!data) return null;
                 return {
                     id: data.id,
-                    name: pickLangValue(data.name)
+                    name: pickLangValue(data.name),
+                    groupId: data.id_attribute_group
                 };
             })
             .filter(Boolean);
+
+        const groupIds = [...new Set(values.map((value) => value.groupId).filter(Boolean))];
+        const groupNames = await fetchOptionGroups(groupIds);
+
+        optionGroups.value = groupIds.map((groupId) => ({
+            id: groupId,
+            name: groupNames[groupId] || groupId,
+            values: values.filter((value) => value.groupId === groupId)
+        }));
+
+        optionGroups.value.forEach((group) => {
+            if (!selectedOptionValueIds.value[group.id]) {
+                selectedOptionValueIds.value[group.id] = '';
+            }
+        });
     } catch (err) {
         console.error('Erreur lors du chargement des options:', err);
-        optionValues.value = [];
+        optionGroups.value = [];
     }
 };
 
@@ -136,13 +174,15 @@ onMounted(fetchproduct);
             <p><strong>Reference:</strong> {{ product.reference }}</p>
             <p><strong>Description:</strong> {{ pickLangValue(product.description_short) }}</p>
 
-            <label for="optionValue">Lignee</label>
-            <select id="optionValue" v-model="selectedOptionValueId">
-                <option value="">Selectionner</option>
-                <option v-for="option in optionValues" :key="option.id" :value="option.id">
-                    {{ option.name || option.id }}
-                </option>
-            </select>
+            <div v-for="group in optionGroups" :key="group.id">
+                <label :for="'option-' + group.id">{{ group.name }}</label>
+                <select :id="'option-' + group.id" v-model="selectedOptionValueIds[group.id]">
+                    <option value="">Selectionner</option>
+                    <option v-for="option in group.values" :key="option.id" :value="option.id">
+                        {{ option.name || option.id }}
+                    </option>
+                </select>
+            </div>
         </div>
 
         <Warning :warning="warning" v-if="warning" />
