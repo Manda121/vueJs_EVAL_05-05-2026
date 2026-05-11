@@ -36,6 +36,7 @@ const api = axios.create({
         'Authorization': 'Basic ' + btoa('4XZXKK1Y8MMXSCYUMHJZ8J26JUY4W8TB' + ':')
     }
 });
+
 const fetchCustomers = async () => {
     loading.value = true;
     error.value = null;

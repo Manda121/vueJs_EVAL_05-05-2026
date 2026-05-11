@@ -3,6 +3,7 @@ import Home from '../views/Home.vue'
 import Customer from '../views/customers/Customer.vue'
 import CustomerDetails from '../views/customers/CustomerDetails.vue'
 import Reinitialisation from '../views/inc/Reinitialisation.vue'
+import LoginBO from '../views/backoffice/login/Login.vue'
 
 const routes = [
   {
@@ -16,7 +17,7 @@ const routes = [
     component: Home
   },
 
-    {
+  {
     path: '/home/:id',
     name: 'id',
     component: Home
@@ -25,8 +26,8 @@ const routes = [
     path: '/customer',
     name: 'customer',
     component: Customer
-  }, 
-    {
+  },
+  {
     path: '/customer/:id',
     name: 'CustomerDetail',
     component: CustomerDetails
@@ -35,6 +36,11 @@ const routes = [
     path: '/reinitialisation',
     name: 'Reinitialisation',
     component: Reinitialisation
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: LoginBO
   },
   // {
   //   path: '/',
