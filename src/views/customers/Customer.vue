@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
-const user_session = localStorage.getItem('user_session');
+const user_session = JSON.parse(localStorage.getItem('user_session'));
 
 if (!user_session) {
     router.push('/login');

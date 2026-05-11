@@ -12,8 +12,8 @@ import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
-const email = ref(null);
-const password = ref(null);
+const email = ref('notiavinamandaniaina@gmail.com');
+const password = ref('eval@Mai05');
 const loading = ref(false);
 const error = ref(null);
 const warning = ref(false);

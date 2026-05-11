@@ -117,6 +117,7 @@ onMounted(fetchgroups);
                     <th>Email</th>
                     <th>Ventes</th>
                     <th>Actif</th>
+                    <th>Birthday</th>
                     <th>Inscription</th>
                 </tr>
             </thead>
@@ -132,6 +133,7 @@ onMounted(fetchgroups);
                             {{ customer.active ? 'Oui' : 'Non' }}
                         </span>
                     </td>
+                    <td>{{ customer.birthday }}</td>
                     <td>{{ customer.date_add }}</td>
                 </tr>
             </tbody>
