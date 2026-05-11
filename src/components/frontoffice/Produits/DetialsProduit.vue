@@ -45,64 +45,105 @@ const normalizeToArray = (value) => {
 };
 
 const fetchOptionGroups = async (groupIds) => {
-    if (!groupIds.length) {
+    if (groupIds.length === 0) {
         return {};
     }
 
     try {
-        const responses = await Promise.all(
-            groupIds.map((id) => api.get('/product_options/' + id, { params: { display: 'full' } }))
-        );
+        const resultats = {};
 
-        return responses.reduce((acc, response) => {
-            const data = parser.parse(response.data)?.prestashop?.product_option;
-            if (!data) return acc;
-            acc[data.id] = pickLangValue(data.name);
-            return acc;
-        }, {});
+        // On boucle sur chaque ID de groupe
+        for (const id of groupIds) {
+            // On attend que la requête finisse avant de passer à l'ID suivant
+            const response = await api.get('/product_options/' + id, { 
+                params: { display: 'full' } 
+            });
+
+            // On analyse les données reçues
+            const data = parser.parse(response.data);
+            const option = data.prestashop.product_option;
+
+            if (option) {
+                const nom = pickLangValue(option.name);
+                const idOption = option.id;
+                // On stocke dans notre objet : { "1": "Couleur" }
+                resultats[idOption] = nom;
+            }
+        }
+
+        return resultats;
     } catch (err) {
-        console.error('Erreur lors du chargement des options:', err);
+        console.error('Erreur lors du chargement des noms de groupes:', err);
         return {};
     }
 };
 
 const fetchOptionValues = async (ids) => {
-    if (!ids.length) {
+    if (ids.length === 0) {
         optionGroups.value = [];
         return;
     }
 
     try {
-        const responses = await Promise.all(
-            ids.map((id) => api.get('/product_option_values/' + id, { params: { display: 'full' } }))
-        );
+        const toutesLesValeurs = [];
 
-        const values = responses
-            .map((response) => {
-                const data = parser.parse(response.data)?.prestashop?.product_option_value;
-                if (!data) return null;
-                return {
-                    id: data.id,
-                    name: pickLangValue(data.name),
-                    groupId: data.id_attribute_group
+        // Étape 1 : Récupérer chaque valeur une par une
+        for (const id of ids) {
+            const response = await api.get('/product_option_values/' + id, { 
+                params: { display: 'full' } 
+            });
+
+            const data = parser.parse(response.data);
+            const valueData = data.prestashop.product_option_value;
+
+            if (valueData) {
+                // On crée un petit objet simple
+                const objetValeur = {
+                    id: valueData.id,
+                    name: pickLangValue(valueData.name),
+                    groupId: valueData.id_attribute_group
                 };
-            })
-            .filter(Boolean);
-
-        const groupIds = [...new Set(values.map((value) => value.groupId).filter(Boolean))];
-        const groupNames = await fetchOptionGroups(groupIds);
-
-        optionGroups.value = groupIds.map((groupId) => ({
-            id: groupId,
-            name: groupNames[groupId] || groupId,
-            values: values.filter((value) => value.groupId === groupId)
-        }));
-
-        optionGroups.value.forEach((group) => {
-            if (!selectedOptionValueIds.value[group.id]) {
-                selectedOptionValueIds.value[group.id] = '';
+                // On l'ajoute à notre liste
+                toutesLesValeurs.push(objetValeur);
             }
-        });
+        }
+
+        // Étape 2 : Trouver les IDs de groupes uniques (sans doublons)
+        const groupIdsUniques = [];
+        for (const v of toutesLesValeurs) {
+            if (groupIdsUniques.includes(v.groupId) === false) {
+                groupIdsUniques.push(v.groupId);
+            }
+        }
+
+        // Étape 3 : Récupérer les noms des groupes
+        const nomsDesGroupes = await fetchOptionGroups(groupIdsUniques);
+
+        // Étape 4 : Organiser les données pour l'affichage (le v-for)
+        const structureFinale = [];
+        for (const gId of groupIdsUniques) {
+            // On filtre les valeurs qui appartiennent à ce groupe
+            const valeursDuGroupe = [];
+            for (const v of toutesLesValeurs) {
+                if (v.groupId === gId) {
+                    valeursDuGroupe.push(v);
+                }
+            }
+
+            structureFinale.push({
+                id: gId,
+                name: nomsDesGroupes[gId] || gId,
+                values: valeursDuGroupe
+            });
+        }
+
+        optionGroups.value = structureFinale;
+
+        // Initialiser les menus déroulants
+        for (const group of optionGroups.value) {
+            selectedOptionValueIds.value[group.id] = '';
+        }
+
     } catch (err) {
         console.error('Erreur lors du chargement des options:', err);
         optionGroups.value = [];
@@ -170,7 +211,7 @@ onMounted(fetchproduct);
         <div v-else-if="product">
             <h3>{{ pickLangValue(product.name) }}</h3>
 
-            <p><strong>Prix:</strong> {{ product.price }}</p>
+            <p><strong>Prix:</strong> {{ product.id }}</p>
             <p><strong>Reference:</strong> {{ product.reference }}</p>
             <p><strong>Description:</strong> {{ pickLangValue(product.description_short) }}</p>
 
