@@ -25,10 +25,155 @@ const api = axios.create({
     }
 });
 
+const quantityTimers = ref({});
 
 const normalizeToArray = (value) => {
     if (!value) return [];
     return Array.isArray(value) ? value : [value];
+};
+
+const buildCartXml = (cart, rows) => {
+    const cartRowsXml = rows
+        .map((row) => {
+            return `        <cart_row>
+          <id_product>${row.id_product}</id_product>
+          <id_product_attribute>${row.id_product_attribute}</id_product_attribute>
+          <id_address_delivery>${row.id_address_delivery}</id_address_delivery>
+          <quantity>${row.quantity}</quantity>
+        </cart_row>`;
+        })
+        .join('\n');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<prestashop>
+  <cart>
+    <id>${cart.id}</id>
+    <id_customer>${cart.id_customer}</id_customer>
+    <id_address_delivery>${cart.id_address_delivery}</id_address_delivery>
+    <id_address_invoice>${cart.id_address_invoice}</id_address_invoice>
+    <id_currency>${cart.id_currency}</id_currency>
+    <id_lang>${cart.id_lang}</id_lang>
+    <id_shop_group>${cart.id_shop_group}</id_shop_group>
+    <id_shop>${cart.id_shop}</id_shop>
+    <associations>
+      <cart_rows>
+${cartRowsXml}
+      </cart_rows>
+    </associations>
+  </cart>
+</prestashop>`;
+};
+
+const saveQuantity = async (produit) => {
+    if (!panier_session.value?.idCart || !panier.value) return;
+
+    const rows = normalizeToArray(panier.value?.associations?.cart_rows?.cart_row).map((row) => {
+        return {
+            id_product: String(row.id_product),
+            id_product_attribute: String(row.id_product_attribute || '0'),
+            id_address_delivery: String(row.id_address_delivery || panier.value.id_address_delivery || '0'),
+            quantity: Number(row.quantity || 0)
+        };
+    });
+
+    const target = rows.find((row) => {
+        return (
+            String(row.id_product) === String(produit.id) &&
+            String(row.id_product_attribute || '0') === String(produit.id_product_attribute || '0')
+        );
+    });
+
+    if (target) {
+        target.quantity = Number(produit.quantity || 1);
+    }
+
+    const xml = buildCartXml(panier.value, rows);
+
+    try {
+        await api.put('/carts/' + panier_session.value.idCart, xml, {
+            headers: { 'Content-Type': 'application/xml' }
+        });
+
+        panier.value.associations.cart_rows.cart_row = rows.map((row) => ({
+            id_product: row.id_product,
+            id_product_attribute: row.id_product_attribute,
+            id_address_delivery: row.id_address_delivery,
+            quantity: row.quantity
+        }));
+    } catch (err) {
+        error.value = 'Erreur lors de la mise a jour de la quantite.';
+        console.error('Details:', err);
+    }
+};
+
+const onQuantityInput = (produit) => {
+    if (!produit) return;
+    if (!produit.quantity || produit.quantity < 1) {
+        produit.quantity = 1;
+    }
+
+    const key = `${produit.id}-${produit.id_product_attribute || 0}`;
+    if (quantityTimers.value[key]) {
+        clearTimeout(quantityTimers.value[key]);
+    }
+
+    quantityTimers.value[key] = setTimeout(() => {
+        saveQuantity(produit);
+    }, 3000);
+};
+
+const updateCartRows = async (rows) => {
+    if (!panier_session.value?.idCart || !panier.value) return;
+
+    const xml = buildCartXml(panier.value, rows);
+
+    try {
+        await api.put('/carts/' + panier_session.value.idCart, xml, {
+            headers: { 'Content-Type': 'application/xml' }
+        });
+
+        panier.value.associations.cart_rows.cart_row = rows.map((row) => ({
+            id_product: row.id_product,
+            id_product_attribute: row.id_product_attribute,
+            id_address_delivery: row.id_address_delivery,
+            quantity: row.quantity
+        }));
+    } catch (err) {
+        error.value = 'Erreur lors de la mise a jour du panier.';
+        console.error('Details:', err);
+    }
+};
+
+const removeProduct = async (produit) => {
+    const rows = normalizeToArray(panier.value?.associations?.cart_rows?.cart_row).map((row) => {
+        return {
+            id_product: String(row.id_product),
+            id_product_attribute: String(row.id_product_attribute || '0'),
+            id_address_delivery: String(row.id_address_delivery || panier.value.id_address_delivery || '0'),
+            quantity: Number(row.quantity || 0)
+        };
+    });
+
+    const filtered = rows.filter((row) => {
+        return !(
+            String(row.id_product) === String(produit.id) &&
+            String(row.id_product_attribute || '0') === String(produit.id_product_attribute || '0')
+        );
+    });
+
+    await updateCartRows(filtered);
+    produits.value = produits.value.filter((item) => {
+        return !(
+            String(item.id) === String(produit.id) &&
+            String(item.id_product_attribute || '0') === String(produit.id_product_attribute || '0')
+        );
+    });
+};
+
+const clearCart = async () => {
+    const rows = [];
+    await updateCartRows(rows);
+    produits.value = [];
 };
 
 const fetchPanier = async () => {
@@ -148,6 +293,7 @@ onMounted(fetchPanier);
 <template>
     <div>
         <h2>Mon Panier {{ panier_session.idCart }}</h2>
+        <button v-if="produits.length" type="button" @click="clearCart">Vider le panier</button>
         <Loading v-if="loading" message="Chargement du panier..." />
         <Warning v-if="warning" :warning="warning" />
         <Error v-if="error" :error="error" />
@@ -158,6 +304,7 @@ onMounted(fetchPanier);
                     <th>Produit</th>
                     <th>Prix</th>
                     <th>Quantite</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -188,7 +335,17 @@ onMounted(fetchPanier);
                             </div>
                         </div>
                     </td>
-                    <td>{{ produit.quantity }}</td>
+                    <td>
+                        <input
+                            type="number"
+                            min="1"
+                            v-model.number="produit.quantity"
+                            @input="onQuantityInput(produit)"
+                        >
+                    </td>
+                    <td>
+                        <button type="button" @click="removeProduct(produit)">Supprimer</button>
+                    </td>
                 </tr>
             </tbody>
         </table>

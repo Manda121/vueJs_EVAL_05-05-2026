@@ -6,12 +6,20 @@ import Warning from '@/components/inc/Warning.vue';
 import Error from '@/components/inc/Error.vue';
 import axios from 'axios';
 
+import DetailAddresse from './DetailAddresse.vue';
+import NewAddresse from './NewAddresse.vue';
+import UpdateAddresse from './UpdateAddresse.vue';
+
 import { onMounted } from 'vue';
 
 const addresses = ref([]);
 const loading = ref(true);
 const warning = ref(null);
 const error = ref(null);
+
+const addresse_id = ref(null);
+const addresse_id_upd = ref(null);
+const create_addresse = ref(false);
 
 const parser = new XMLParser({});
 
@@ -33,7 +41,7 @@ const fetchaddresses = async () => {
         });
 
         const jsonObj = parser.parse(response.data);
-        const data = jsonObj?.prestashop?.addresses?.addresse;
+        const data = jsonObj?.prestashop?.addresses?.address;
 
         if (!data) {
             warning.value = "Aucun addresse trouvé.";
@@ -57,38 +65,67 @@ onMounted(fetchaddresses);
 </script>
 
 <template>
-    <div>
+    <div :class="addresse_id || create_addresse || addresse_id_upd ? 'flou' : ''">
+        <h2>Liste des adresses</h2>
+
+        <button @click="create_addresse = true">Ajouter une adresse</button>
+
         <Loading v-if="loading" message="Chargement des addresses..." />
         <Warning :warning="warning" v-if="warning" />
         <Error :error="error" v-if="error" />
-        <table>
-            <tr>
-                <th>id</th>
-            </tr>
-            <tr v-for="addresse in addresses">
-                <td>
-                </td>
-                <td>{{ addresse.name.language[0] }} <br> {{ addresse.name.language[1] }}</td>
-                <td>
-                    <div v-if="addresse.associations?.specific_prices">
-                        <span style="text-decoration: line-through; color: red; margin-right: 10px;">
-                            {{ parseFloat(addresse.price).toFixed(2) }} €
-                        </span>
-                        <span style="font-weight: bold; color: green;">
-                            PROMO (Consulter détail)
-                        </span>
-                    </div>
-                    <div v-else>
-                        {{ parseFloat(addresse.price).toFixed(2) }} €
-                    </div>
-                </td>
-            </tr>
+
+        <table v-else border="1">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Alias</th>
+                    <th>Nom</th>
+                    <th>Adresse</th>
+                    <th>Ville</th>
+                    <th>Pays</th>
+                    <th>Telephone</th>
+                    <th>Ajout</th>
+                    <th>Modifier</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="addresse in addresses" :key="addresse.id" style="cursor: grab;">
+                    <td @click="addresse_id = addresse.id">{{ addresse.id }}</td>
+                    <td @click="addresse_id = addresse.id">{{ addresse.alias }}</td>
+                    <td @click="addresse_id = addresse.id">{{ addresse.firstname }} {{ addresse.lastname }}</td>
+                    <td @click="addresse_id = addresse.id">{{ addresse.address1 }}</td>
+                    <td @click="addresse_id = addresse.id">{{ addresse.city }}</td>
+                    <td @click="addresse_id = addresse.id">{{ addresse.id_country }}</td>
+                    <td @click="addresse_id = addresse.id">{{ addresse.phone }}</td>
+                    <td @click="addresse_id = addresse.id">{{ addresse.date_add }}</td>
+                    <td><button @click="addresse_id_upd = addresse.id">Modifier</button></td>
+                </tr>
+            </tbody>
         </table>
     </div>
+    <DetailAddresse v-if="addresse_id" v-model="addresse_id" />
+    <UpdateAddresse v-if="addresse_id_upd" v-model="addresse_id_upd" />
+    <NewAddresse v-if="create_addresse" v-model="create_addresse" />
 </template>
 
 <style scoped>
-img {
-    width: 5%;
+.flou {
+    filter: blur(5px);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th,
+td {
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background-color: #f4f4f4;
 }
 </style>

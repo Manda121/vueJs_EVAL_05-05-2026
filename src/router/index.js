@@ -9,6 +9,7 @@ import DetailsProduitFO from '../views/frontoffice/produits/DetailsProduit.vue'
 import ListePanierFO from '../views/frontoffice/panier/ListePanier.vue'
 import LoginFO from '../views/frontoffice/login/Login.vue'
 import GetPanierFO from '../views/frontoffice/panier/GtePanier.vue'
+import AddresseFO from '../views/frontoffice/addresse/addresse.vue'
 
 const routes = [
   {
@@ -65,7 +66,13 @@ const routes = [
     path: '/front/paniers',
     name: 'panier_front',
     component: GetPanierFO
+  },
+  {
+    path: '/front/addresses',
+    name: 'addresses_front',
+    component: AddresseFO
   }
+
   // {
   //   path: '/',
   //   name: 'dashboard',
