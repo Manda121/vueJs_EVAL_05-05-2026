@@ -28,14 +28,66 @@ const api = axios.create({
     }
 });
 
-const cartContext = {
-    idCustomer: '1',
-    idCurrency: '1',
-    idLang: '1',
-    idShop: '1',
-    idShopGroup: '1',
-    idAddressDelivery: '1',
-    idAddressInvoice: '1'
+const CART_STORAGE_KEY = 'cart_session';
+
+const getCustomerSession = () => {
+    return JSON.parse(localStorage.getItem('customer_session'));
+};
+
+const getStoredCart = () => {
+    try {
+        return JSON.parse(localStorage.getItem(CART_STORAGE_KEY));
+    } catch (err) {
+        return null;
+    }
+};
+
+const saveStoredCart = (cart) => {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+};
+
+const fetchDeliveryAddressId = async (customerId) => {
+    if (!customerId || String(customerId) === '0') {
+        return '0';
+    }
+
+    try {
+        const response = await api.get('/addresses', {
+            params: {
+                display: 'full',
+                'filter[id_customer]': customerId
+            }
+        });
+
+        const jsonObj = parser.parse(response.data);
+        const data = jsonObj?.prestashop?.addresses?.address;
+        if (!data) {
+            return '0';
+        }
+
+        const list = Array.isArray(data) ? data : [data];
+        const addressId = list[0]?.id || list[0];
+        return addressId ? String(addressId) : '0';
+    } catch (err) {
+        console.error('Erreur lors du chargement des adresses:', err);
+        return '0';
+    }
+};
+
+const buildCartContext = async () => {
+    const session = getCustomerSession();
+    const idCustomer = session?.id ? String(session.id) : '0';
+    const idAddressDelivery = await fetchDeliveryAddressId(idCustomer);
+
+    return {
+        idCustomer,
+        idCurrency: '1',
+        idLang: '1',
+        idShop: '1',
+        idShopGroup: '1',
+        idAddressDelivery,
+        idAddressInvoice: idAddressDelivery
+    };
 };
 
 const pickLangValue = (node) => {
@@ -213,32 +265,81 @@ const fetchproduct = async () => {
 };
 
 const buildCartXml = ({
-    idProduct,
-    idProductAttribute,
-    qty
+    idCart,
+    context,
+    rows
 }) => {
+    const cartRowsXml = rows
+        .map((row) => {
+            return `        <cart_row>
+          <id_product>${row.idProduct}</id_product>
+          <id_product_attribute>${row.idProductAttribute}</id_product_attribute>
+          <id_address_delivery>${row.idAddressDelivery}</id_address_delivery>
+          <quantity>${row.quantity}</quantity>
+        </cart_row>`;
+        })
+        .join('\n');
+
     return `<?xml version="1.0" encoding="UTF-8"?>
 <prestashop>
   <cart>
-    <id_customer>${cartContext.idCustomer}</id_customer>
-    <id_address_delivery>${cartContext.idAddressDelivery}</id_address_delivery>
-    <id_address_invoice>${cartContext.idAddressInvoice}</id_address_invoice>
-    <id_currency>${cartContext.idCurrency}</id_currency>
-    <id_lang>${cartContext.idLang}</id_lang>
-    <id_shop_group>${cartContext.idShopGroup}</id_shop_group>
-    <id_shop>${cartContext.idShop}</id_shop>
+    ${idCart ? `<id>${idCart}</id>` : ''}
+    <id_customer>${context.idCustomer}</id_customer>
+    <id_address_delivery>${context.idAddressDelivery}</id_address_delivery>
+    <id_address_invoice>${context.idAddressInvoice}</id_address_invoice>
+    <id_currency>${context.idCurrency}</id_currency>
+    <id_lang>${context.idLang}</id_lang>
+    <id_shop_group>${context.idShopGroup}</id_shop_group>
+    <id_shop>${context.idShop}</id_shop>
     <associations>
       <cart_rows>
-        <cart_row>
-          <id_product>${idProduct}</id_product>
-          <id_product_attribute>${idProductAttribute}</id_product_attribute>
-          <id_address_delivery>${cartContext.idAddressDelivery}</id_address_delivery>
-          <quantity>${qty}</quantity>
-        </cart_row>
+${cartRowsXml}
       </cart_rows>
     </associations>
   </cart>
 </prestashop>`;
+};
+
+const fetchCartById = async (idCart) => {
+    try {
+        const response = await api.get('/carts/' + idCart, {
+            params: { display: 'full' }
+        });
+
+        const jsonObj = parser.parse(response.data);
+        return jsonObj?.prestashop?.cart || null;
+    } catch (err) {
+        console.error('Erreur lors du chargement du panier:', err);
+        return null;
+    }
+};
+
+const normalizeCartRows = (cart) => {
+    const rows = normalizeToArray(cart?.associations?.cart_rows?.cart_row);
+    return rows.map((row) => {
+        return {
+            idProduct: String(row?.id_product || '0'),
+            idProductAttribute: String(row?.id_product_attribute || '0'),
+            idAddressDelivery: String(row?.id_address_delivery || '0'),
+            quantity: Number(row?.quantity || 0)
+        };
+    });
+};
+
+const mergeRow = (rows, newRow) => {
+    const existing = rows.find((row) => {
+        return (
+            String(row.idProduct) === String(newRow.idProduct) &&
+            String(row.idProductAttribute) === String(newRow.idProductAttribute) &&
+            String(row.idAddressDelivery) === String(newRow.idAddressDelivery)
+        );
+    });
+
+    if (existing) {
+        existing.quantity += Number(newRow.quantity || 0);
+    } else {
+        rows.push(newRow);
+    }
 };
 
 const findCombinationId = async () => {
@@ -309,6 +410,7 @@ const addToCart = async () => {
     }
 
     try {
+        const context = await buildCartContext();
         const combinationId = await findCombinationId();
 
         if (optionGroups.value.length > 0 && !combinationId) {
@@ -316,15 +418,71 @@ const addToCart = async () => {
             return;
         }
 
-        const xml = buildCartXml({
-            idProduct: product.value.id,
+        const newRow = {
+            idProduct: String(product.value.id),
             idProductAttribute: combinationId || '0',
-            qty: quantity.value
-        });
+            idAddressDelivery: context.idAddressDelivery,
+            quantity: Number(quantity.value || 1)
+        };
 
-        await api.post('/carts', xml, {
-            headers: { 'Content-Type': 'application/xml' }
-        });
+        const storedCart = getStoredCart();
+        const storedCartId = storedCart?.idCart ? String(storedCart.idCart) : null;
+
+        if (storedCartId) {
+            const remoteCart = await fetchCartById(storedCartId);
+            if (!remoteCart) {
+                localStorage.removeItem(CART_STORAGE_KEY);
+            }
+        }
+
+        const activeStoredCart = getStoredCart();
+        const activeCartId = activeStoredCart?.idCart ? String(activeStoredCart.idCart) : null;
+
+        if (activeCartId) {
+            const remoteCart = await fetchCartById(activeCartId);
+            const rows = normalizeCartRows(remoteCart);
+
+            mergeRow(rows, newRow);
+
+            const xml = buildCartXml({
+                idCart: activeCartId,
+                context,
+                rows
+            });
+
+            await api.put('/carts/' + activeCartId, xml, {
+                headers: { 'Content-Type': 'application/xml' }
+            });
+
+            saveStoredCart({
+                idCart: activeCartId,
+                idCustomer: context.idCustomer,
+                idAddressDelivery: context.idAddressDelivery,
+                idAddressInvoice: context.idAddressInvoice
+            });
+        } else {
+            const xml = buildCartXml({
+                idCart: null,
+                context,
+                rows: [newRow]
+            });
+
+            const response = await api.post('/carts', xml, {
+                headers: { 'Content-Type': 'application/xml' }
+            });
+
+            const jsonObj = parser.parse(response.data);
+            const createdCart = jsonObj?.prestashop?.cart;
+            const createdId = createdCart?.id || createdCart;
+            if (createdId) {
+                saveStoredCart({
+                    idCart: String(createdId),
+                    idCustomer: context.idCustomer,
+                    idAddressDelivery: context.idAddressDelivery,
+                    idAddressInvoice: context.idAddressInvoice
+                });
+            }
+        }
 
         success.value = 'Produit ajoute au panier.';
     } catch (err) {
