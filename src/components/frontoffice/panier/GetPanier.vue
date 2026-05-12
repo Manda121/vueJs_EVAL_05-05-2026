@@ -60,19 +60,41 @@ const fetchPanier = async () => {
         const rows = normalizeToArray(panier.value?.associations?.cart_rows?.cart_row);
 
         for (const row of rows) {
-            response = await api.get('/products/' + row.id_product, {
+            // 1. Récupérer les infos du produit de base
+            let resProd = await api.get('/products/' + row.id_product, {
                 params: { 'display': 'full' }
             });
+            let prodData = parser.parse(resProd.data)?.prestashop?.product;
 
-            jsonObj = parser.parse(response.data);
-            data = jsonObj?.prestashop?.product;
+            let comboDetails = null;
+            let priceImpact = 0;
 
-            if (data) {
+            // 2. Si le produit a une combinaison, on récupère son impact
+            if (row.id_product_attribute && row.id_product_attribute !== "0") {
+                try {
+                    let resCombo = await api.get('/combinations/' + row.id_product_attribute);
+                    let comboData = parser.parse(resCombo.data)?.prestashop?.combination;
+
+                    if (comboData) {
+                        priceImpact = parseFloat(comboData.price || 0);
+                        // On peut aussi stocker l'ID de la combinaison pour plus tard
+                        comboDetails = row.id_product_attribute;
+                    }
+                } catch (cErr) {
+                    console.error("Erreur combo:", cErr);
+                }
+            }
+
+            if (prodData) {
                 produits.value.push({
-                    ...data,
+                    ...prodData,
+                    details: await getComboDetails(comboDetails), // Récupère les détails de la combinaison
                     quantity: Number(row.quantity || 0),
-                    id_product_attribute: row.id_product_attribute
+                    id_product_attribute: row.id_product_attribute,
+                    price_impact: priceImpact, // On stocke l'impact
+                    total_unit_price: parseFloat(prodData.price) + priceImpact // Calcul du prix réel
                 });
+                console.log(produits.value[0].details);
             }
         }
 
@@ -81,6 +103,42 @@ const fetchPanier = async () => {
         console.error('Details:', err);
     } finally {
         loading.value = false;
+    }
+};
+
+const getComboDetails = async (id_product_attribute) => {
+    if (!id_product_attribute || id_product_attribute === "0") return [];
+
+    try {
+        const resCombo = await api.get(`/combinations/${id_product_attribute}`);
+        const combo = parser.parse(resCombo.data)?.prestashop?.combination;
+
+        const values = normalizeToArray(combo?.associations?.product_option_values?.product_option_value);
+
+        let details = []; // Initialisation indispensable
+
+        for (const v of values) {
+            // 1. Récupérer la valeur (ex: "Bleu")
+            const resVal = await api.get(`/product_option_values/${v.id}`);
+            const valData = parser.parse(resVal.data)?.prestashop?.product_option_value;
+            const valName = Array.isArray(valData.name.language) ? valData.name.language[0] : valData.name.language;
+
+            // 2. Récupérer l'option parente (ex: "Couleur")
+            // On utilise l'id_attribute_group qui lie la valeur à son groupe (option)
+            const idGroup = valData.id_attribute_group;
+            const resOpt = await api.get(`/product_options/${idGroup}`);
+            const optData = parser.parse(resOpt.data)?.prestashop?.product_option;
+            const optName = Array.isArray(optData.name.language) ? optData.name.language[0] : optData.name.language;
+
+            details.push({
+                option: optName,
+                valeur: valName
+            });
+        }
+        return details;
+    } catch (err) {
+        console.error("Erreur détails combo:", err);
+        return [];
     }
 };
 
@@ -103,11 +161,33 @@ onMounted(fetchPanier);
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="produit in produits" :key="produit.id">
+                <tr v-for="produit in produits" :key="produit.id + '-' + produit.id_product_attribute">
                     <td>
-                        {{ Array.isArray(produit.name?.language) ? produit.name.language[0] : produit.name?.language || produit.name }}
+                        <div class="product-name">
+                            {{ Array.isArray(produit.name?.language) ? produit.name.language[0] : produit.name?.language
+                            }}
+                        </div>
+
+                        <small v-if="produit.id_product_attribute != 0" class="combo-info">
+                            Variante ID: {{ produit.id_product_attribute }}
+                        </small>
+                        <div v-for="(item, index) in produit.details" :key="index">
+                            <strong>{{ item.option }} :</strong> {{ item.valeur }}
+                        </div>
                     </td>
-                    <td>{{ produit.price }}</td>
+                    <td>
+                        <div class="price-details">
+                            <span class="final-price">{{ produit.total_unit_price.toFixed(2) }} €</span>
+
+                            <div v-if="produit.price_impact !== 0" class="impact-tag">
+                                <small>
+                                    (Base: {{ parseFloat(produit.price).toFixed(2) }}
+                                    {{ produit.price_impact > 0 ? '+' : '' }}{{ produit.price_impact.toFixed(2) }}
+                                    impact)
+                                </small>
+                            </div>
+                        </div>
+                    </td>
                     <td>{{ produit.quantity }}</td>
                 </tr>
             </tbody>
