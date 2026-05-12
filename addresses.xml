@@ -1,0 +1,71 @@
+This XML file does not appear to have any style information associated with it. The document tree is shown below.
+<prestashop xmlns:xlink="http://www.w3.org/1999/xlink">
+<address>
+<id_customer format="isNullOrUnsignedId">
+<![CDATA[ ]]>
+</id_customer>
+<id_manufacturer format="isNullOrUnsignedId">
+<![CDATA[ ]]>
+</id_manufacturer>
+<id_supplier format="isNullOrUnsignedId">
+<![CDATA[ ]]>
+</id_supplier>
+<id_warehouse format="isNullOrUnsignedId">
+<![CDATA[ ]]>
+</id_warehouse>
+<id_country required="true" format="isUnsignedId">
+<![CDATA[ ]]>
+</id_country>
+<id_state format="isNullOrUnsignedId">
+<![CDATA[ ]]>
+</id_state>
+<alias required="true" maxSize="32" format="isGenericName">
+<![CDATA[ ]]>
+</alias>
+<company maxSize="255" format="isGenericName">
+<![CDATA[ ]]>
+</company>
+<lastname required="true" maxSize="255" format="isName">
+<![CDATA[ ]]>
+</lastname>
+<firstname required="true" maxSize="255" format="isName">
+<![CDATA[ ]]>
+</firstname>
+<vat_number format="isGenericName">
+<![CDATA[ ]]>
+</vat_number>
+<address1 required="true" maxSize="128" format="isAddress">
+<![CDATA[ ]]>
+</address1>
+<address2 maxSize="128" format="isAddress">
+<![CDATA[ ]]>
+</address2>
+<postcode maxSize="12" format="isPostCode">
+<![CDATA[ ]]>
+</postcode>
+<city required="true" maxSize="64" format="isCityName">
+<![CDATA[ ]]>
+</city>
+<other maxSize="4194303" format="isMessage">
+<![CDATA[ ]]>
+</other>
+<phone maxSize="32" format="isPhoneNumber">
+<![CDATA[ ]]>
+</phone>
+<phone_mobile maxSize="32" format="isPhoneNumber">
+<![CDATA[ ]]>
+</phone_mobile>
+<dni maxSize="16" format="isDniLite">
+<![CDATA[ ]]>
+</dni>
+<deleted format="isBool">
+<![CDATA[ ]]>
+</deleted>
+<date_add format="isDate">
+<![CDATA[ ]]>
+</date_add>
+<date_upd format="isDate">
+<![CDATA[ ]]>
+</date_upd>
+</address>
+</prestashop>
