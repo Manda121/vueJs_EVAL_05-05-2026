@@ -8,6 +8,7 @@ import ListeProduitsFO from '../views/frontoffice/produits/ListeProduits.vue'
 import DetailsProduitFO from '../views/frontoffice/produits/DetailsProduit.vue'
 import ListePanierFO from '../views/frontoffice/panier/ListePanier.vue'
 import LoginFO from '../views/frontoffice/login/Login.vue'
+import GetPanierFO from '../views/frontoffice/panier/GtePanier.vue'
 
 const routes = [
   {
@@ -20,7 +21,6 @@ const routes = [
     name: 'id',
     component: Home
   },
-
   {
     path: '/home/:id',
     name: 'id',
@@ -56,10 +56,15 @@ const routes = [
     name: 'details_produits_front',
     component: DetailsProduitFO
   },
+  // {
+  //   path: '/front/paniers',
+  //   name: 'panier_front',
+  //   component: ListePanierFO
+  // },
   {
     path: '/front/paniers',
     name: 'panier_front',
-    component: ListePanierFO
+    component: GetPanierFO
   }
   // {
   //   path: '/',
