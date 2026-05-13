@@ -1,10 +1,12 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import Loading from '@/components/inc/Loading.vue';
 import Warning from '@/components/inc/Warning.vue';
 import Error from '@/components/inc/Error.vue';
 import axios from 'axios';
 import { XMLParser } from 'fast-xml-parser';
+
+import NewOrder from '../orders/NewOrder.vue';
 
 const customer_session = JSON.parse(localStorage.getItem('customer_session'));
 const panier_session = ref(JSON.parse(localStorage.getItem('cart_session')));
@@ -30,6 +32,85 @@ const quantityTimers = ref({});
 const normalizeToArray = (value) => {
     if (!value) return [];
     return Array.isArray(value) ? value : [value];
+};
+
+const parseNumber = (value) => {
+    const parsed = parseFloat(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const taxRateCache = ref({});
+const specificPriceCache = ref({});
+
+const getTaxRateFromRuleGroup = async (idTaxRulesGroup) => {
+    const key = String(idTaxRulesGroup || '0');
+    if (key === '0') return 0;
+    if (taxRateCache.value[key] !== undefined) {
+        return taxRateCache.value[key];
+    }
+
+    try {
+        const resRules = await api.get('/tax_rules', {
+            params: {
+                'filter[id_tax_rules_group]': `[${key}]`,
+                'display': 'full'
+            }
+        });
+
+        const rulesRoot = parser.parse(resRules.data)?.prestashop?.tax_rules;
+        const rules = normalizeToArray(rulesRoot?.tax_rule);
+        const rule = rules[0];
+        const taxId = rule?.id_tax;
+        if (!taxId) {
+            taxRateCache.value[key] = 0;
+            return 0;
+        }
+
+        const resTax = await api.get(`/taxes/${taxId}`, { params: { 'display': 'full' } });
+        const taxRoot = parser.parse(resTax.data)?.prestashop;
+        const tax = taxRoot?.tax || normalizeToArray(taxRoot?.taxes?.tax)[0];
+        const rate = parseNumber(tax?.rate);
+        const rateValue = rate / 100;
+        taxRateCache.value[key] = rateValue;
+        return rateValue;
+    } catch (err) {
+        console.error('Erreur taxe:', err);
+        taxRateCache.value[key] = 0;
+        return 0;
+    }
+};
+
+const getSpecificPrice = async (productId, productAttributeId) => {
+    const key = `${productId || 0}-${productAttributeId || 0}`;
+    if (specificPriceCache.value[key] !== undefined) {
+        return specificPriceCache.value[key];
+    }
+
+    try {
+        const res = await api.get('/specific_prices', {
+            params: {
+                'filter[id_product]': `[${productId}]`,
+                'display': 'full'
+            }
+        });
+
+        const root = parser.parse(res.data)?.prestashop?.specific_prices;
+        const list = normalizeToArray(root?.specific_price);
+
+        const attrId = String(productAttributeId || '0');
+        const match = list.find((item) => {
+            return String(item.id_product_attribute || '0') === attrId;
+        }) || list.find((item) => {
+            return String(item.id_product_attribute || '0') === '0';
+        });
+
+        specificPriceCache.value[key] = match || null;
+        return match || null;
+    } catch (err) {
+        console.error('Erreur specific price:', err);
+        specificPriceCache.value[key] = null;
+        return null;
+    }
 };
 
 const buildCartXml = (cart, rows) => {
@@ -231,15 +312,35 @@ const fetchPanier = async () => {
             }
 
             if (prodData) {
+                const basePriceHt = parseNumber(prodData.price);
+                const taxRate = await getTaxRateFromRuleGroup(prodData.id_tax_rules_group);
+                const specificPrice = await getSpecificPrice(prodData.id, row.id_product_attribute);
+                const specificBasePriceHt = specificPrice && parseNumber(specificPrice.price) > 0
+                    ? parseNumber(specificPrice.price)
+                    : basePriceHt;
+                const reductionValue = specificPrice ? parseNumber(specificPrice.reduction) : 0;
+                const reductionType = specificPrice?.reduction_type || null;
+                const reductionTax = String(specificPrice?.reduction_tax || '0') === '1';
+                const priceWithImpactHt = specificBasePriceHt + priceImpact;
+                let priceWithTax = priceWithImpactHt * (1 + taxRate);
+
+                if (reductionValue > 0 && reductionType) {
+                    if (reductionType === 'percentage') {
+                        priceWithTax = priceWithTax * (1 - reductionValue);
+                    } else if (reductionType === 'amount') {
+                        const reductionTtc = reductionTax ? reductionValue : reductionValue * (1 + taxRate);
+                        priceWithTax = priceWithTax - reductionTtc;
+                    }
+                    if (priceWithTax < 0) priceWithTax = 0;
+                }
                 produits.value.push({
                     ...prodData,
                     details: await getComboDetails(comboDetails), // Récupère les détails de la combinaison
                     quantity: Number(row.quantity || 0),
                     id_product_attribute: row.id_product_attribute,
                     price_impact: priceImpact, // On stocke l'impact
-                    total_unit_price: parseFloat(prodData.price) + priceImpact // Calcul du prix réel
+                    total_unit_price: priceWithTax // HT + impact, puis taxe, puis reduction
                 });
-                console.log(produits.value[0].details);
             }
         }
 
@@ -248,6 +349,8 @@ const fetchPanier = async () => {
         console.error('Details:', err);
     } finally {
         loading.value = false;
+
+        console.log('1.5: ' + Math.round(1.5 * 100) / 100);
     }
 };
 
@@ -288,12 +391,21 @@ const getComboDetails = async (id_product_attribute) => {
 };
 
 onMounted(fetchPanier);
+
+const totalPanier = computed(() => {
+    return produits.value.reduce((sum, item) => {
+        const unit = Number(item.total_unit_price || 0);
+        const qty = Number(item.quantity || 0);
+        return sum + unit * qty;
+    }, 0);
+});
 </script>
 
 <template>
     <div>
         <h2>Mon Panier {{ panier_session.idCart }}</h2>
         <button v-if="produits.length" type="button" @click="clearCart">Vider le panier</button>
+        <!-- <button @click="clearCart">Commander</button> -->
         <Loading v-if="loading" message="Chargement du panier..." />
         <Warning v-if="warning" :warning="warning" />
         <Error v-if="error" :error="error" />
@@ -349,5 +461,8 @@ onMounted(fetchPanier);
                 </tr>
             </tbody>
         </table>
+        <div v-if="!loading && !error && produits.length" class="panier-total">
+            <strong>Total panier :</strong> {{ totalPanier.toFixed(2) }} €
+        </div>
     </div>
 </template>

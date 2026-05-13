@@ -10,6 +10,7 @@ import ListePanierFO from '../views/frontoffice/panier/ListePanier.vue'
 import LoginFO from '../views/frontoffice/login/Login.vue'
 import GetPanierFO from '../views/frontoffice/panier/GtePanier.vue'
 import AddresseFO from '../views/frontoffice/addresse/addresse.vue'
+import NewOrderFO from '../views/frontoffice/commandes/NewOrder.vue'
 
 const routes = [
   {
@@ -71,6 +72,11 @@ const routes = [
     path: '/front/addresses',
     name: 'addresses_front',
     component: AddresseFO
+  },
+  {
+    path: '/front/commandes',
+    name: 'commandes_front',
+    component: NewOrderFO
   }
 
   // {

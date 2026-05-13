@@ -1,0 +1,56 @@
+This XML file does not appear to have any style information associated with it. The document tree is shown below.
+<prestashop xmlns:xlink="http://www.w3.org/1999/xlink">
+<specific_price>
+<id_shop_group format="isUnsignedId">
+<![CDATA[ ]]>
+</id_shop_group>
+<id_shop required="true" format="isUnsignedId">
+<![CDATA[ ]]>
+</id_shop>
+<id_cart required="true" format="isUnsignedId">
+<![CDATA[ ]]>
+</id_cart>
+<id_product required="true" format="isUnsignedId">
+<![CDATA[ ]]>
+</id_product>
+<id_product_attribute format="isUnsignedId">
+<![CDATA[ ]]>
+</id_product_attribute>
+<id_currency required="true" format="isUnsignedId">
+<![CDATA[ ]]>
+</id_currency>
+<id_country required="true" format="isUnsignedId">
+<![CDATA[ ]]>
+</id_country>
+<id_group required="true" format="isUnsignedId">
+<![CDATA[ ]]>
+</id_group>
+<id_customer required="true" format="isUnsignedId">
+<![CDATA[ ]]>
+</id_customer>
+<id_specific_price_rule format="isUnsignedId">
+<![CDATA[ ]]>
+</id_specific_price_rule>
+<price required="true" format="isNegativePrice">
+<![CDATA[ ]]>
+</price>
+<from_quantity required="true" format="isUnsignedInt">
+<![CDATA[ ]]>
+</from_quantity>
+<reduction required="true" format="isPrice">
+<![CDATA[ ]]>
+</reduction>
+<reduction_tax required="true" format="isBool">
+<![CDATA[ ]]>
+</reduction_tax>
+<reduction_type required="true" format="isReductionType">
+<![CDATA[ ]]>
+</reduction_type>
+<from required="true" format="isDateFormat">
+<![CDATA[ ]]>
+</from>
+<to required="true" format="isDateFormat">
+<![CDATA[ ]]>
+</to>
+</specific_price>
+</prestashop>

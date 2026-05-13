@@ -44,6 +44,8 @@ const fetchProducts = async () => {
         const listeproduits = Array.isArray(data) ? data : [data];
         produits.value = listeproduits;
 
+        produits.value.sort((a, b) => a.id - b.id);
+
     } catch (err) {
         error.value = "Erreur lors de la récupération ou du traitement des données.";
         console.error("Détails:", err);
@@ -74,6 +76,7 @@ onMounted(fetchProducts);
                             :alt="`image de ${produit.name.language[0]}`">
                     </a>
                 </td>
+                <td><strong>{{ produit.id }}</strong></td>
                 <td>{{ produit.name.language[0] }} <br> {{ produit.name.language[1] }}</td>
                 <td>
                     <div v-if="produit.associations?.specific_prices">

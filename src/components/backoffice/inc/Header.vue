@@ -7,6 +7,8 @@ const router = useRouter();
 
 function disconnect () {
     localStorage.removeItem('user_session'); // On supprime d'abord
+    localStorage.removeItem('customer_session'); // On supprime d'abord
+    localStorage.removeItem('cart_session'); // On supprime d'abord
     user_session.value = null; // On vide la ref (déclenche la mise à jour visuelle)
     router.push('/login');
 }
