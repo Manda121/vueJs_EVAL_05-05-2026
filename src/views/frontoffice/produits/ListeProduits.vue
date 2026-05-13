@@ -2,16 +2,16 @@
 import ListeProduit from '@/components/frontoffice/Produits/ListeProduit.vue';
 import { useRouter } from 'vue-router';
 
-const router = useRouter();
+// const router = useRouter();
 
-const user_session = JSON.parse(localStorage.getItem('customer_session'));
+// const user_session = JSON.parse(localStorage.getItem('customer_session'));
 
-if (!user_session) {
-    router.push('/');
-}
+// if (!user_session) {
+//     router.push('/');
+// }
 </script>
 
-<template>
+<template> 
     <div>
         <ListeProduit/>
     </div>

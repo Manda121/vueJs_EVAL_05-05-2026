@@ -19,6 +19,9 @@ const etape = ref(1);
 const customer_session = ref(null);
 const cart_session = ref(null);
 
+const showAuthForm = ref(false);
+const authMode = ref('login');
+
 const addresses = ref([]);
 const selectedAddressId = ref('');
 const showNewAddress = ref(false);
@@ -32,6 +35,7 @@ const optionsPaiement = [
     { id: 2, label: 'Payer par cheque', module: 'ps_checkpayment', nom: 'Cheque' },
     { id: 3, label: 'Payer par virement bancaire', module: 'ps_wirepayment', nom: 'Virement bancaire' }
 ];
+
 const selectedPaymentId = ref('');
 
 const orderStates = ref([]);
@@ -48,6 +52,19 @@ const api = axios.create({
 const refreshSession = () => {
     customer_session.value = JSON.parse(localStorage.getItem('customer_session'));
     cart_session.value = JSON.parse(localStorage.getItem('cart_session'));
+};
+
+const toggleAuthForm = (mode) => {
+    authMode.value = mode;
+    showAuthForm.value = true;
+};
+
+const disconnect = () => {
+    localStorage.removeItem('customer_session');
+    customer_session.value = null;
+    cart_session.value = null;
+    warning.value = 'Vous etes deconnecte.';
+    etape.value = 1;
 };
 
 const normalizeToArray = (value) => {
@@ -440,6 +457,7 @@ const createOrder = async () => {
         });
 
         warning.value = 'Commande creee.';
+        localStorage.removeItem('cart_session');
     } catch (err) {
         error.value = 'Erreur lors de la creation de la commande.';
         console.error('Details:', err);
@@ -484,11 +502,16 @@ onMounted(() => {
             <div v-if="customer_session">
                 <p>Client: {{ customer_session.firstname }} {{ customer_session.lastname }}</p>
                 <button @click="ensureStep1">Continuer</button>
+                <button @click="disconnect">Changer (deconnecter)</button>
             </div>
 
             <div v-else>
-                <Login />
-                <Singin />
+                <div>
+                    <button @click="toggleAuthForm('login')">Login</button>
+                    <button @click="toggleAuthForm('signin')">S'inscrire</button>
+                </div>
+                <Login v-if="showAuthForm && authMode === 'login'" />
+                <Singin v-if="showAuthForm && authMode === 'signin'" />
                 <button @click="ensureStep1">J'ai deja un compte</button>
             </div>
         </div>
@@ -499,12 +522,7 @@ onMounted(() => {
             <div v-if="addresses.length">
                 <div v-for="addr in addresses" :key="addr.id">
                     <label>
-                        <input
-                            type="radio"
-                            name="address"
-                            :value="String(addr.id)"
-                            v-model="selectedAddressId"
-                        >
+                        <input type="radio" name="address" :value="String(addr.id)" v-model="selectedAddressId">
                         {{ addr.alias }} - {{ addr.address1 }}, {{ addr.city }}
                     </label>
                 </div>
@@ -527,12 +545,7 @@ onMounted(() => {
 
             <div v-for="carrier in carriers" :key="carrier.id">
                 <label>
-                    <input
-                        type="radio"
-                        name="carrier"
-                        :value="String(carrier.id)"
-                        v-model="selectedCarrierId"
-                    >
+                    <input type="radio" name="carrier" :value="String(carrier.id)" v-model="selectedCarrierId">
                     {{ carrier.name }}
                 </label>
             </div>
@@ -546,12 +559,7 @@ onMounted(() => {
 
             <div v-for="option in optionsPaiement" :key="option.id">
                 <label>
-                    <input
-                        type="radio"
-                        name="payment"
-                        :value="String(option.id)"
-                        v-model="selectedPaymentId"
-                    >
+                    <input type="radio" name="payment" :value="String(option.id)" v-model="selectedPaymentId">
                     {{ option.label }}
                 </label>
             </div>

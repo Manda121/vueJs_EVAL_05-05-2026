@@ -3,13 +3,14 @@ import { ref, onMounted, computed } from 'vue';
 import Loading from '@/components/inc/Loading.vue';
 import Warning from '@/components/inc/Warning.vue';
 import Error from '@/components/inc/Error.vue';
+import NewOrder from '../orders/NewOrder.vue';
 import axios from 'axios';
 import { XMLParser } from 'fast-xml-parser';
 
-import NewOrder from '../orders/NewOrder.vue';
-
 const customer_session = JSON.parse(localStorage.getItem('customer_session'));
 const panier_session = ref(JSON.parse(localStorage.getItem('cart_session')));
+
+const commander = ref(false);
 
 const loading = ref(false);
 const error = ref(null);
@@ -354,8 +355,6 @@ const fetchPanier = async () => {
         console.error('Details:', err);
     } finally {
         loading.value = false;
-
-        console.log('1.5: ' + Math.round(1.5 * 100) / 100);
     }
 };
 
@@ -409,7 +408,9 @@ const totalPanier = computed(() => {
 
 <template>
     <div>
-        <h2>Mon Panier {{ panier_session.idCart }}</h2>
+        <h2>Mon Panier {{ panier_session }}</h2>
+        <button @click="commander = true" v-if="!commander">commander</button>
+        <button @click="commander = false" v-if="commander">Annuler</button>
         <button v-if="produits.length" type="button" @click="clearCart">Vider le panier</button>
         <!-- <button @click="clearCart">Commander</button> -->
         <Loading v-if="loading" message="Chargement du panier..." />
@@ -470,5 +471,7 @@ const totalPanier = computed(() => {
         <div v-if="!loading && !error && produits.length" class="panier-total">
             <strong>Total panier :</strong> {{ totalPanier.toFixed(2) }} €
         </div>
+
+        <NewOrder v-if="commander"/>
     </div>
 </template>

@@ -97,7 +97,7 @@ const SingIn = async () => {
         }
 
         localStorage.setItem('customer_session', JSON.stringify(createdCustomer));
-        rooter.push('/front/produits');
+        // rooter.push('/front/produits');
     } catch (err) {
         console.error(err.response?.data || err);
     }

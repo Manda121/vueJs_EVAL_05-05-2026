@@ -8,9 +8,11 @@ import ListeProduitsFO from '../views/frontoffice/produits/ListeProduits.vue'
 import DetailsProduitFO from '../views/frontoffice/produits/DetailsProduit.vue'
 import ListePanierFO from '../views/frontoffice/panier/ListePanier.vue'
 import LoginFO from '../views/frontoffice/login/Login.vue'
-import GetPanierFO from '../views/frontoffice/panier/GtePanier.vue'
-import AddresseFO from '../views/frontoffice/addresse/addresse.vue'
+import GetPanierFO from '../views/frontoffice/panier/GetPanier.vue'
+import AddresseFO from '../views/frontoffice/addresse/Addresse.vue'
 import NewOrderFO from '../views/frontoffice/commandes/NewOrder.vue'
+import ListeOrderFO from '@/views/frontoffice/orders/ListeOrder.vue'
+import ListeOrderBO from '@/views/backoffice/order/ListeOrder.vue'
 
 const routes = [
   {
@@ -19,9 +21,9 @@ const routes = [
     component: LoginFO
   },
   {
-    path: '/home/:id',
-    name: 'id',
-    component: Home
+    path: '/back/commandes',
+    name: 'liste_commandes',
+    component: ListeOrderBO
   },
   {
     path: '/home/:id',
@@ -74,9 +76,14 @@ const routes = [
     component: AddresseFO
   },
   {
-    path: '/front/commandes',
-    name: 'commandes_front',
+    path: '/front/commandes/new',
+    name: 'commandes_front_new',
     component: NewOrderFO
+  },
+  {
+    path: '/front/commandes',
+    name: 'commandes_front_list',
+    component: ListeOrderFO
   }
 
   // {
