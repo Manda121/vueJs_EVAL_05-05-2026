@@ -60,6 +60,10 @@ const parseNumber = (value) => {
     return Number.isNaN(parsed) ? 0 : parsed;
 };
 
+const roundPrice = (value) => {
+    return Math.round(parseNumber(value));
+};
+
 const taxRateCache = ref({});
 const specificPriceCache = ref({});
 
@@ -322,16 +326,22 @@ const buildOrderRow = async (row) => {
     }
 
     const finalPrices = await computeFinalPrices(product, row.id_product_attribute, priceImpact);
+    const roundedTaxIncl = roundPrice(finalPrices.unitPriceTaxIncl);
+    const roundedTaxExcl = roundPrice(finalPrices.unitPriceTaxExcl);
 
     return {
-        product_id: row.id_product,
-        product_attribute_id: row.id_product_attribute || '0',
-        product_quantity: row.quantity,
-        product_name: Array.isArray(product?.name?.language)
-            ? product.name.language[0]
-            : product?.name?.language || product?.name || '',
-        unit_price_tax_incl: finalPrices.unitPriceTaxIncl.toFixed(2),
-        unit_price_tax_excl: finalPrices.unitPriceTaxExcl.toFixed(2)
+        orderRow: {
+            product_id: row.id_product,
+            product_attribute_id: row.id_product_attribute || '0',
+            product_quantity: row.quantity,
+            product_name: Array.isArray(product?.name?.language)
+                ? product.name.language[0]
+                : product?.name?.language || product?.name || '',
+            unit_price_tax_incl: roundedTaxIncl.toFixed(2),
+            unit_price_tax_excl: roundedTaxExcl.toFixed(2)
+        },
+        unitPriceTaxInclRaw: finalPrices.unitPriceTaxIncl,
+        unitPriceTaxExclRaw: finalPrices.unitPriceTaxExcl
     };
 };
 
@@ -361,11 +371,14 @@ const createOrder = async () => {
 
         const orderRows = [];
         let totalProductsWT = 0;
+        let totalProductsExcl = 0;
 
         for (let i = 0; i < rows.length; i++) {
-            const orderRow = await buildOrderRow(rows[i]);
-            orderRows.push(orderRow);
-            totalProductsWT += Number(orderRow.unit_price_tax_incl) * Number(orderRow.product_quantity || 0);
+            const orderRowData = await buildOrderRow(rows[i]);
+            orderRows.push(orderRowData.orderRow);
+            const qty = Number(orderRowData.orderRow.product_quantity || 0);
+            totalProductsWT += orderRowData.unitPriceTaxInclRaw * qty;
+            totalProductsExcl += orderRowData.unitPriceTaxExclRaw * qty;
         }
 
         const cartTotalProductsWT = Number(cartData.total_products_wt || 0);
@@ -374,9 +387,14 @@ const createOrder = async () => {
         const cartTotalPaid = Number(cartData.total_paid_tax_incl || cartData.total_paid || 0);
 
         const totalProductsFinal = cartTotalProductsWT > 0 ? cartTotalProductsWT : totalProductsWT;
-        const totalProductsExclFinal = cartTotalProducts > 0 ? cartTotalProducts : totalProductsFinal;
+        const totalProductsExclFinal = cartTotalProducts > 0 ? cartTotalProducts : totalProductsExcl;
         const totalShippingFinal = cartTotalShipping > 0 ? cartTotalShipping : 0;
         const totalPaidFinal = cartTotalPaid > 0 ? cartTotalPaid : totalProductsFinal + totalShippingFinal;
+
+        const totalProductsFinalRounded = roundPrice(totalProductsFinal);
+        const totalProductsExclFinalRounded = roundPrice(totalProductsExclFinal);
+        const totalShippingFinalRounded = roundPrice(totalShippingFinal);
+        const totalPaidFinalRounded = roundPrice(totalPaidFinal);
 
         const paymentOption = optionsPaiement.find((item) => String(item.id) === String(selectedPaymentId.value));
         const paymentName = paymentOption?.nom || 'payment';
@@ -397,15 +415,15 @@ const createOrder = async () => {
                     current_state: selectedOrderStateId.value,
                     module: paymentModule,
                     payment: paymentName,
-                    total_paid: totalPaidFinal.toFixed(2),
-                    total_paid_tax_incl: totalPaidFinal.toFixed(2),
-                    total_paid_tax_excl: totalPaidFinal.toFixed(2),
+                    total_paid: totalPaidFinalRounded.toFixed(2),
+                    total_paid_tax_incl: totalPaidFinalRounded.toFixed(2),
+                    total_paid_tax_excl: totalPaidFinalRounded.toFixed(2),
                     total_paid_real: '0.00',
-                    total_products: totalProductsExclFinal.toFixed(2),
-                    total_products_wt: totalProductsFinal.toFixed(2),
-                    total_shipping: totalShippingFinal.toFixed(2),
-                    total_shipping_tax_incl: totalShippingFinal.toFixed(2),
-                    total_shipping_tax_excl: totalShippingFinal.toFixed(2),
+                    total_products: totalProductsExclFinalRounded.toFixed(2),
+                    total_products_wt: totalProductsFinalRounded.toFixed(2),
+                    total_shipping: totalShippingFinalRounded.toFixed(2),
+                    total_shipping_tax_incl: totalShippingFinalRounded.toFixed(2),
+                    total_shipping_tax_excl: totalShippingFinalRounded.toFixed(2),
                     conversion_rate: '1.000000',
                     associations: {
                         order_rows: {

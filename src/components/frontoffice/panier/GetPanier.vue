@@ -39,6 +39,10 @@ const parseNumber = (value) => {
     return Number.isNaN(parsed) ? 0 : parsed;
 };
 
+const roundPrice = (value) => {
+    return Math.round(parseNumber(value));
+};
+
 const taxRateCache = ref({});
 const specificPriceCache = ref({});
 
@@ -333,13 +337,14 @@ const fetchPanier = async () => {
                     }
                     if (priceWithTax < 0) priceWithTax = 0;
                 }
+                const roundedUnitPrice = roundPrice(priceWithTax);
                 produits.value.push({
                     ...prodData,
                     details: await getComboDetails(comboDetails), // Récupère les détails de la combinaison
                     quantity: Number(row.quantity || 0),
                     id_product_attribute: row.id_product_attribute,
                     price_impact: priceImpact, // On stocke l'impact
-                    total_unit_price: priceWithTax // HT + impact, puis taxe, puis reduction
+                    total_unit_price: roundedUnitPrice // HT + impact, puis taxe, puis reduction, puis arrondi
                 });
             }
         }
@@ -393,11 +398,12 @@ const getComboDetails = async (id_product_attribute) => {
 onMounted(fetchPanier);
 
 const totalPanier = computed(() => {
-    return produits.value.reduce((sum, item) => {
+    const sum = produits.value.reduce((total, item) => {
         const unit = Number(item.total_unit_price || 0);
         const qty = Number(item.quantity || 0);
-        return sum + unit * qty;
+        return total + unit * qty;
     }, 0);
+    return roundPrice(sum);
 });
 </script>
 
@@ -436,12 +442,12 @@ const totalPanier = computed(() => {
                     </td>
                     <td>
                         <div class="price-details">
-                            <span class="final-price">{{ produit.total_unit_price.toFixed(2) }} €</span>
+                            <span class="final-price">{{ roundPrice(produit.total_unit_price).toFixed(2) }} €</span>
 
                             <div v-if="produit.price_impact !== 0" class="impact-tag">
                                 <small>
-                                    (Base: {{ parseFloat(produit.price).toFixed(2) }}
-                                    {{ produit.price_impact > 0 ? '+' : '' }}{{ produit.price_impact.toFixed(2) }}
+                                    (Base: {{ roundPrice(produit.price).toFixed(2) }}
+                                    {{ produit.price_impact > 0 ? '+' : '' }}{{ roundPrice(produit.price_impact).toFixed(2) }}
                                     impact)
                                 </small>
                             </div>

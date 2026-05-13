@@ -22,6 +22,15 @@ const api = axios.create({
     }
 });
 
+const parseNumber = (value) => {
+    const parsed = parseFloat(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const roundPrice = (value) => {
+    return Math.round(parseNumber(value));
+};
+
 
 const fetchProducts = async () => {
     loading.value = true;
@@ -81,14 +90,14 @@ onMounted(fetchProducts);
                 <td>
                     <div v-if="produit.associations?.specific_prices">
                         <span style="text-decoration: line-through; color: red; margin-right: 10px;">
-                            {{ parseFloat(produit.price).toFixed(2) }} €
+                            {{ roundPrice(produit.price).toFixed(2) }} €
                         </span>
                         <span style="font-weight: bold; color: green;">
                             PROMO (Consulter détail)
                         </span>
                     </div>
                     <div v-else>
-                        {{ parseFloat(produit.price).toFixed(2) }} €
+                        {{ roundPrice(produit.price).toFixed(2) }} €
                     </div>
                 </td>
             </tr>

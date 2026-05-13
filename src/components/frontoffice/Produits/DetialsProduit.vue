@@ -109,6 +109,15 @@ const normalizeToArray = (value) => {
     return Array.isArray(value) ? value : [value];
 };
 
+const parseNumber = (value) => {
+    const parsed = parseFloat(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const roundPrice = (value) => {
+    return Math.round(parseNumber(value));
+};
+
 const fetchOptionGroups = async (groupIds) => {
     if (groupIds.length === 0) {
         return {};
@@ -505,7 +514,7 @@ onMounted(fetchproduct);
         <div v-else-if="product">
             <h3>{{ pickLangValue(product.name) }}</h3>
 
-            <p><strong>Prix:</strong> {{ product.price }}</p>
+            <p><strong>Prix:</strong> {{ roundPrice(product.price).toFixed(2) }}</p>
             <p><strong>Reference:</strong> {{ product.reference }}</p>
             <p><strong>Description:</strong> {{ pickLangValue(product.description_short) }}</p>
 
