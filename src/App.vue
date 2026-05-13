@@ -1,5 +1,5 @@
 <script setup>
-import Header from './components/backoffice/inc/Header.vue';
+import Header from './components/inc/Header.vue';
 </script>
 
 <template>

@@ -1,6 +1,6 @@
 <script setup>
-import ListeProduit from '@/components/frontoffice/Produits/ListeProduit.vue';
-import { useRouter } from 'vue-router';
+import NewOrder from '@/components/frontoffice/orders/NewOrder.vue';
+// import { useRouter } from 'vue-router';
 
 // const router = useRouter();
 
@@ -11,8 +11,8 @@ import { useRouter } from 'vue-router';
 // }
 </script>
 
-<template> 
+<template>
     <div>
-        <ListeProduit/>
+        <NewOrder />
     </div>
 </template>

@@ -22,6 +22,15 @@ const api = axios.create({
     }
 });
 
+const parseNumber = (value) => {
+    const parsed = parseFloat(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const roundPrice = (value) => {
+    return Math.round(parseNumber(value));
+};
+
 
 const fetchProducts = async () => {
     loading.value = true;
@@ -42,7 +51,28 @@ const fetchProducts = async () => {
 
         // On force le format tableau
         const listeproduits = Array.isArray(data) ? data : [data];
+        
+        for (const produit of listeproduits) {
+            const date_upd = new Date(produit.date_upd);
+            const date_now = new Date();
+
+            // Calcul de la différence en millisecondes
+            const differenceEnMs = date_now - date_upd;
+
+            // Conversion en jours (1 jour = 24h * 60m * 60s * 1000ms)
+            const differenceEnJours = differenceEnMs / (1000 * 60 * 60 * 24);
+            
+            if (differenceEnJours <= 1) {
+                produit.desc = 'HOT';
+            } else if (differenceEnJours > 1 && differenceEnJours <= 7) {
+                produit.desc = 'NEW';
+            } else if (differenceEnJours > 7) {
+                produit.desc = 'OLD';
+            }
+        }
+        
         produits.value = listeproduits;
+        produits.value.sort((a, b) => a.id - b.id);
 
     } catch (err) {
         error.value = "Erreur lors de la récupération ou du traitement des données.";
@@ -65,6 +95,7 @@ onMounted(fetchProducts);
             <tr>
                 <th>image</th>
                 <th>produit</th>
+                <th>desc</th>
                 <th>prix</th>
             </tr>
             <tr v-for="produit in produits">
@@ -74,18 +105,20 @@ onMounted(fetchProducts);
                             :alt="`image de ${produit.name.language[0]}`">
                     </a>
                 </td>
+                <td><strong>{{ produit.id }}</strong></td>
                 <td>{{ produit.name.language[0] }} <br> {{ produit.name.language[1] }}</td>
+                <td>{{ produit.desc }} </td>
                 <td>
                     <div v-if="produit.associations?.specific_prices">
                         <span style="text-decoration: line-through; color: red; margin-right: 10px;">
-                            {{ parseFloat(produit.price).toFixed(2) }} €
+                            {{ roundPrice(produit.price).toFixed(2) }} €
                         </span>
                         <span style="font-weight: bold; color: green;">
                             PROMO (Consulter détail)
                         </span>
                     </div>
                     <div v-else>
-                        {{ parseFloat(produit.price).toFixed(2) }} €
+                        {{ roundPrice(produit.price).toFixed(2) }} €
                     </div>
                 </td>
             </tr>
