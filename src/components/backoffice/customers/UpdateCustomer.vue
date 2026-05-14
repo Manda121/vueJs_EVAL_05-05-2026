@@ -5,9 +5,9 @@ import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 import ListGroup from '../groups/ListGroup.vue';
 
 
-import Loading from '../inc/Loading.vue';
-import Warning from '../inc/Warning.vue';
-import Error from '../inc/Error.vue';
+import Loading from '../../inc/Loading.vue';
+import Warning from '../../inc/Warning.vue';
+import Error from '../../inc/Error.vue';
 
 const update_customer = defineModel();
 const groups = ref([]);

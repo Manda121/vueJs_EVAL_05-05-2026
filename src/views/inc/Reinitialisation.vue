@@ -1,5 +1,5 @@
 <script setup>
-import DeleteCustomer from '../../components/customers/DeleteCustomer.vue';
+import DeleteCustomer from '../../components/backoffice/customers/DeleteCustomer.vue';
 </script>
 
 <template>

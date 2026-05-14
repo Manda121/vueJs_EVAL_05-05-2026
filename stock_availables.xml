@@ -1,0 +1,29 @@
+This XML file does not appear to have any style information associated with it. The document tree is shown below.
+<prestashop xmlns:xlink="http://www.w3.org/1999/xlink">
+<stock_available>
+<id_product required="true" format="isUnsignedId">
+<![CDATA[ ]]>
+</id_product>
+<id_product_attribute required="true" format="isUnsignedId">
+<![CDATA[ ]]>
+</id_product_attribute>
+<id_shop format="isUnsignedId">
+<![CDATA[ ]]>
+</id_shop>
+<id_shop_group format="isUnsignedId">
+<![CDATA[ ]]>
+</id_shop_group>
+<quantity required="true" format="isInt">
+<![CDATA[ ]]>
+</quantity>
+<depends_on_stock required="true" format="isBool">
+<![CDATA[ ]]>
+</depends_on_stock>
+<out_of_stock required="true" format="isInt">
+<![CDATA[ ]]>
+</out_of_stock>
+<location maxSize="255" format="isString">
+<![CDATA[ ]]>
+</location>
+</stock_available>
+</prestashop>

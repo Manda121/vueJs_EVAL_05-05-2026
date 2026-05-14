@@ -1,0 +1,22 @@
+This XML file does not appear to have any style information associated with it. The document tree is shown below.
+<prestashop xmlns:xlink="http://www.w3.org/1999/xlink">
+<product_option_value>
+<id_attribute_group required="true" format="isUnsignedId">
+<![CDATA[ ]]>
+</id_attribute_group>
+<color format="isColor">
+<![CDATA[ ]]>
+</color>
+<position format="isInt">
+<![CDATA[ ]]>
+</position>
+<name required="true" maxSize="128" format="isGenericName">
+<language id="1" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/1" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+<language id="2" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/2" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+</name>
+</product_option_value>
+</prestashop>

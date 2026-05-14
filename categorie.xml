@@ -1,0 +1,104 @@
+This XML file does not appear to have any style information associated with it. The document tree is shown below.
+<prestashop xmlns:xlink="http://www.w3.org/1999/xlink">
+<category>
+<id_parent format="isUnsignedInt">
+<![CDATA[ ]]>
+</id_parent>
+<level_depth read_only="true" format="isUnsignedInt" readOnly="true">
+<![CDATA[ ]]>
+</level_depth>
+<nb_products_recursive notFilterable="true" read_only="true" readOnly="true">
+<![CDATA[ ]]>
+</nb_products_recursive>
+<active required="true" format="isBool">
+<![CDATA[ ]]>
+</active>
+<id_shop_default format="isUnsignedId">
+<![CDATA[ ]]>
+</id_shop_default>
+<is_root_category format="isBool">
+<![CDATA[ ]]>
+</is_root_category>
+<position>
+<![CDATA[ ]]>
+</position>
+<date_add format="isDate">
+<![CDATA[ ]]>
+</date_add>
+<date_upd format="isDate">
+<![CDATA[ ]]>
+</date_upd>
+<name required="true" maxSize="128" format="isCatalogName">
+<language id="1" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/1" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+<language id="2" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/2" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+</name>
+<link_rewrite required="true" maxSize="128" format="isLinkRewrite">
+<language id="1" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/1" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+<language id="2" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/2" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+</link_rewrite>
+<description maxSize="4194303" format="isCleanHtml">
+<language id="1" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/1" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+<language id="2" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/2" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+</description>
+<additional_description maxSize="4194303" format="isCleanHtml">
+<language id="1" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/1" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+<language id="2" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/2" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+</additional_description>
+<meta_title maxSize="255" format="isGenericName">
+<language id="1" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/1" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+<language id="2" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/2" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+</meta_title>
+<meta_description maxSize="512" format="isGenericName">
+<language id="1" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/1" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+<language id="2" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/2" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+</meta_description>
+<meta_keywords maxSize="255" format="isGenericName">
+<language id="1" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/1" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+<language id="2" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/2" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+</meta_keywords>
+<associations>
+<categories nodeType="category" api="categories">
+<category>
+<id>
+<![CDATA[ ]]>
+</id>
+</category>
+</categories>
+<products nodeType="product" api="products">
+<product>
+<id>
+<![CDATA[ ]]>
+</id>
+</product>
+</products>
+</associations>
+</category>
+</prestashop>

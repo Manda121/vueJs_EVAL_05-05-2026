@@ -2,9 +2,9 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { XMLParser } from 'fast-xml-parser';
-import Loading from '../inc/Loading.vue';
-import Warning from '../inc/Warning.vue';
-import Error from '../inc/Error.vue';
+import Loading from '../../inc/Loading.vue';
+import Warning from '../../inc/Warning.vue';
+import Error from '../../inc/Error.vue';
 
 import Detailscustomer from './Detailscustomer.vue';
 import NewCustomer from './NewCustomer.vue';

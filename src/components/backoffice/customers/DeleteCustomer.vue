@@ -3,9 +3,9 @@
 import { XMLParser } from 'fast-xml-parser';
 import { ref, watch } from 'vue';
 import axios from 'axios';
-import Loading from '../inc/Loading.vue';
-import Error from '../inc/Error.vue';
-import Warning from '../inc/Warning.vue';
+import Loading from '../../inc/Loading.vue';
+import Error from '../../inc/Error.vue';
+import Warning from '../../inc/Warning.vue';
 
 const runSignal = defineModel('runSignal');
 const props = defineProps({

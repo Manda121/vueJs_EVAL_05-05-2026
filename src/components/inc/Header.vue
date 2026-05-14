@@ -46,6 +46,7 @@ function disconnect() {
             <RouterLink to="/front/paniers">panier</RouterLink>
             <RouterLink to="/front/commandes">commandes</RouterLink>
             <RouterLink to="/back/commandes">back_commande</RouterLink>
+            <RouterLink to="/reinitialisation">back_produits</RouterLink>
 
             <template v-if="!customer_session">
                 <button @click="connect = !connect">

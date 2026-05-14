@@ -1,17 +1,11 @@
 
 <script setup>
-import { XMLParser } from 'fast-xml-parser';
-import { ref, watch } from 'vue';
+import { XMLParser, XMLBuilder } from 'fast-xml-parser';
+import { ref } from 'vue';
 import axios from 'axios';
-import Loading from '../inc/Loading.vue';
-import Error from '../inc/Error.vue';
-import Warning from '../inc/Warning.vue';
-
-const runSignal = defineModel('runSignal');
-const props = defineProps({
-    showButton: { type: Boolean, default: false }
-});
-const emit = defineEmits(['done']);
+import Loading from '../../inc/Loading.vue';
+import Error from '../../inc/Error.vue';
+import Warning from '../../inc/Warning.vue';
 
 const loading = ref(null);
 const error = ref(null);
@@ -27,8 +21,6 @@ const api = axios.create({
         'Authorization': 'Basic ' + btoa('4XZXKK1Y8MMXSCYUMHJZ8J26JUY4W8TB' + ':')
     }
 });
-
-const isRunning = ref(false);
 
 const DeleteCustomer = async () => {
     loading.value = "suppression en cours...";
@@ -55,7 +47,7 @@ const DeleteCustomer = async () => {
             loading.value = `Suppression du client ${customers.value[i].id}...`;
             error.value = null;
             try {
-                await api.delete('/customers/' + customers.value[i].id, {
+                response = await api.delete('/customers/' + customers.value[i].id, {
                     params: { 'display': 'full' }
                 });
             } catch (errOrder) {
@@ -70,26 +62,12 @@ const DeleteCustomer = async () => {
         loading.value = false;
     }
 };
-
-watch(runSignal, async (newValue, oldValue) => {
-    if (newValue === oldValue) return;
-    if (!newValue) return;
-    if (isRunning.value) return;
-
-    isRunning.value = true;
-    try {
-        await DeleteCustomer();
-    } finally {
-        isRunning.value = false;
-        emit('done');
-    }
-});
 </script>
 
 <template>
     <div>
         <h2>Customer</h2>
-        <button v-if="props.showButton" @click="DeleteCustomer">delete</button>
+        <button @click="DeleteCustomer">delete</button>
         <Loading v-if="loading" message="Chargement des clients..." />
         <Error :error="error" v-if="error" />
         <Warning :warning="warning" v-if="warning" />
