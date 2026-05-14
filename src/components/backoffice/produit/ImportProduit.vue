@@ -26,7 +26,7 @@ const parser = new XMLParser({
 
 const defaultLangId = 1;
 const defaultParentCategoryId = 2;
-const defaultCountryId = 1;
+const defaultCountryId = 133;
 
 const taxGroupCache = ref({});
 const taxRateCache = ref({});
@@ -419,6 +419,10 @@ function buildProductXml(product, langs) {
             product: {
                 id_category_default: product.id_category_default,
                 id_tax_rules_group: product.id_tax_rules_group,
+                available_for_order: 1,
+                type: { '@_id': 1, '#text': 'combinations' },
+                show_price: 1,
+                minimal_quantity: 1,
                 active: 1,
                 state: 1,
                 price: product.price_ht,
@@ -613,18 +617,3 @@ async function importProduits() {
         </table>
     </div>
 </template>
-
-<style scoped>
-.popop {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: white;
-    padding: 20px;
-    border: 1px solid #ccc;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    z-index: 1000;
-    position: absolute;
-}
-</style>

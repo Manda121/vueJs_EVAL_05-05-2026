@@ -6,6 +6,7 @@ import DeletePanier from '../../../components/backoffice/panier/DeletePanier.vue
 import DeleteProduit from '../../../components/backoffice/produit/DeleteProduit.vue';
 import DeleteCustomer from '../../../components/backoffice/customers/DeleteCustomer.vue';
 import ImportProduit from '@/components/backoffice/produit/ImportProduit.vue';
+import ImportDeclinaison from '@/components/backoffice/declinaison/ImportDeclinaison.vue';
 
 const running = ref(false);
 
@@ -67,5 +68,6 @@ const Reinitialiser = async () => {
 		<DeleteCategorie v-model:runSignal="runCategorie" @done="doneCategorie += 1" />
 
         <ImportProduit />
+        <ImportDeclinaison />
 	</div>
 </template>
