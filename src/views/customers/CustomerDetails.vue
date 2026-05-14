@@ -1,5 +1,5 @@
 <script setup>
-import Detailscustomer from '../../components/customers/Detailscustomer.vue';
+import Detailscustomer from '../../components/backoffice/customers/Detailscustomer.vue';
 import { useRoute } from 'vue-router'
 
 const route = useRoute();

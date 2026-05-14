@@ -2,9 +2,9 @@
 import { ref } from 'vue';
 import axios from 'axios';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
-import Loading from '../inc/Loading.vue';
-import Warning from '../inc/Warning.vue';
-import Error from '../inc/Error.vue';
+import Loading from '../../inc/Loading.vue';
+import Warning from '../../inc/Warning.vue';
+import Error from '../../inc/Error.vue';
 
 const import_csv = defineModel();
 
@@ -134,26 +134,26 @@ async function createGroupIfMissing(name) {
 
     const builder = new XMLBuilder({ format: true, attributeNamePrefix: '@_', ignoreAttributes: false });
     const groupData = {
-    prestashop: {
-        // L'attribut xmlns est souvent nécessaire pour le POST
-        "@_xmlns:xlink": "http://www.w3.org/1999/xlink",
-        group: {
-            name: {
-                // On utilise un tableau pour gérer les langues
-                language: [
-                    {
-                        "@_id": defaultLangId, // Sera transformé en id="..."
-                        "#text": name          // Contenu de la balise
-                    }
-                ]
-            },
-            price_display_method: 0,
-            show_prices: 1
+        prestashop: {
+            // L'attribut xmlns est souvent nécessaire pour le POST
+            "@_xmlns:xlink": "http://www.w3.org/1999/xlink",
+            group: {
+                name: {
+                    // On utilise un tableau pour gérer les langues
+                    language: [
+                        {
+                            "@_id": defaultLangId, // Sera transformé en id="..."
+                            "#text": name          // Contenu de la balise
+                        }
+                    ]
+                },
+                price_display_method: 0,
+                show_prices: 1
+            }
         }
-    }
-};
+    };
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n${builder.build(groupData)}`;
-    console.log("new group: "+xml);
+    console.log("new group: " + xml);
     const api = axios.create({
         baseURL: '/api',
         headers: {
@@ -211,33 +211,33 @@ async function customerExists(email, birthday) {
 }
 
 function buildCustomerXml(customer, groups) {
-        const builder = new XMLBuilder({ format: true, attributeNamePrefix: '@_', ignoreAttributes: false });
-        const customerData = {
-                prestashop: {
-                        customer: {
-                                id_lang: defaultLangId,
-                                id_default_group: customer.default_group_id,
-                                id_gender: customer.id_gender,
-                                lastname: customer.lastname,
-                                firstname: customer.firstname,
-                                email: customer.email,
-                                passwd: customer.passwd,
-                                birthday: customer.birthday,
-                                newsletter: customer.newsletter,
-                                optin: customer.optin,
-                                active: customer.active,
-                                date_add: customer.date_add,
-                                date_upd: customer.date_upd,
-                                associations: {
-                                        groups: {
-                                                group: groups.map((id) => ({ id: id }))
-                                        }
-                                }
-                        }
+    const builder = new XMLBuilder({ format: true, attributeNamePrefix: '@_', ignoreAttributes: false });
+    const customerData = {
+        prestashop: {
+            customer: {
+                id_lang: defaultLangId,
+                id_default_group: customer.default_group_id,
+                id_gender: customer.id_gender,
+                lastname: customer.lastname,
+                firstname: customer.firstname,
+                email: customer.email,
+                passwd: customer.passwd,
+                birthday: customer.birthday,
+                newsletter: customer.newsletter,
+                optin: customer.optin,
+                active: customer.active,
+                date_add: customer.date_add,
+                date_upd: customer.date_upd,
+                associations: {
+                    groups: {
+                        group: groups.map((id) => ({ id: id }))
+                    }
                 }
-        };
+            }
+        }
+    };
 
-        return `<?xml version="1.0" encoding="UTF-8"?>\n${builder.build(customerData)}`;
+    return `<?xml version="1.0" encoding="UTF-8"?>\n${builder.build(customerData)}`;
 }
 
 async function importCustomers() {
@@ -451,7 +451,7 @@ async function importCustomers() {
     background-color: white;
     padding: 20px;
     border: 1px solid #ccc;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     z-index: 1000;
     position: absolute;
 }

@@ -1,0 +1,88 @@
+This XML file does not appear to have any style information associated with it. The document tree is shown below.
+<prestashop xmlns:xlink="http://www.w3.org/1999/xlink">
+<combination>
+<id_product required="true" format="isUnsignedId">
+<![CDATA[ ]]>
+</id_product>
+<ean13 maxSize="13" format="isEan13">
+<![CDATA[ ]]>
+</ean13>
+<isbn maxSize="32" format="isIsbn">
+<![CDATA[ ]]>
+</isbn>
+<upc maxSize="12" format="isUpc">
+<![CDATA[ ]]>
+</upc>
+<mpn maxSize="40" format="isMpn">
+<![CDATA[ ]]>
+</mpn>
+<reference maxSize="64">
+<![CDATA[ ]]>
+</reference>
+<supplier_reference maxSize="64">
+<![CDATA[ ]]>
+</supplier_reference>
+<wholesale_price maxSize="27" format="isNegativePrice">
+<![CDATA[ ]]>
+</wholesale_price>
+<price maxSize="20" format="isNegativePrice">
+<![CDATA[ ]]>
+</price>
+<ecotax maxSize="20" format="isPrice">
+<![CDATA[ ]]>
+</ecotax>
+<weight format="isFloat">
+<![CDATA[ ]]>
+</weight>
+<unit_price_impact maxSize="20" format="isNegativePrice">
+<![CDATA[ ]]>
+</unit_price_impact>
+<minimal_quantity required="true" format="isPositiveInt">
+<![CDATA[ ]]>
+</minimal_quantity>
+<low_stock_threshold format="isInt">
+<![CDATA[ ]]>
+</low_stock_threshold>
+<low_stock_alert format="isBool">
+<![CDATA[ ]]>
+</low_stock_alert>
+<default_on format="isBool">
+<![CDATA[ ]]>
+</default_on>
+<available_date format="isDateFormat">
+<![CDATA[ ]]>
+</available_date>
+<available_now maxSize="255" format="isGenericName">
+<language id="1" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/1" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+<language id="2" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/2" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+</available_now>
+<available_later maxSize="255" format="IsGenericName">
+<language id="1" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/1" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+<language id="2" xlink:href="http://localhost/prestashop_edition_classic_version_8.2.6/api/languages/2" format="isUnsignedId">
+<![CDATA[ ]]>
+</language>
+</available_later>
+<associations>
+<product_option_values nodeType="product_option_value" api="product_option_values">
+<product_option_value>
+<id>
+<![CDATA[ ]]>
+</id>
+</product_option_value>
+</product_option_values>
+<images nodeType="image" api="images/products">
+<image>
+<id>
+<![CDATA[ ]]>
+</id>
+</image>
+</images>
+</associations>
+</combination>
+</prestashop>

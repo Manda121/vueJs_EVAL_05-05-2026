@@ -1,5 +1,5 @@
 <script setup>
-import Listecustomer from '../../components/customers/Listecustomer.vue';
+import Listecustomer from '../../components/backoffice/customers/Listecustomer.vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
