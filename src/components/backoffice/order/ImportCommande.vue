@@ -315,6 +315,7 @@ async function getTaxRateForGroup(groupId) {
 
     if (!rule || !rule.id_tax) {
         taxRateCache.value[groupId] = 0;
+        console.log('no taxe')
         return 0;
     }
 
@@ -412,13 +413,17 @@ function getPaymentInfo(etat) {
     if (normalized.includes('livraison')) {
         return { module: 'ps_cashondelivery', payment: 'Paiement a la livraison' };
     }
+    if (normalized.includes('cheque') || normalized.includes('check')) {
+        return { module: 'ps_checkpayment', payment: 'Cheque' };
+    }
     if (normalized.includes('accepte')) {
         return { module: 'ps_checkpayment', payment: 'Paiement accepte' };
     }
     if (normalized.includes('erreur')) {
         return { module: 'ps_checkpayment', payment: 'Erreur de paiement' };
     }
-    return { module: 'ps_cashondelivery', payment: 'Paiement a la livraison' };
+    // Etat vide ou inconnu : on utilise un module neutre sans declenchement de paiement automatique
+    return { module: 'ps_checkpayment', payment: 'Paiement' };
 }
 
 function buildCartXml(cart) {
@@ -458,6 +463,24 @@ function buildOrderXml(order) {
         }
     };
     return `<?xml version="1.0" encoding="UTF-8"?>\n${builder.build(orderData)}`;
+}
+
+function buildOrderPaymentXml(payment) {
+    const builder = new XMLBuilder({ format: true, attributeNamePrefix: '@_', ignoreAttributes: false });
+    const paymentData = {
+        prestashop: {
+            '@_xmlns:xlink': 'http://www.w3.org/1999/xlink',
+            order_payment: {
+                order_reference: payment.order_reference,
+                id_currency: payment.id_currency,
+                amount: payment.amount,
+                payment_method: payment.payment_method,
+                transaction_id: payment.transaction_id,
+                date_add: payment.date_add
+            }
+        }
+    };
+    return `<?xml version="1.0" encoding="UTF-8"?>\n${builder.build(paymentData)}`;
 }
 
 function buildOrderHistoryXml(history) {
@@ -589,6 +612,7 @@ async function importCommandes() {
 
                 const taxRate = await getTaxRateForGroup(product.id_tax_rules_group);
                 const unitHt = product.price_ht + (combo ? combo.impact_ht : 0);
+                console.log('taxe: ' + taxRate + 'ht: ' + unitHt);
                 const unitTtc = unitHt * (1 + taxRate / 100);
 
                 cartRows.push({
@@ -646,9 +670,12 @@ async function importCommandes() {
                 continue;
             }
 
+
             const orderStateId = await getOrderStateId(etat);
             const paymentInfo = getPaymentInfo(etat);
 
+            // On cree la commande avec total_paid_real=0 pour eviter que PrestaShop
+            // cree automatiquement un paiement. On gerera le paiement manuellement.
             const orderXml = buildOrderXml({
                 id_cart: cartId,
                 id_customer: customer.id,
@@ -662,7 +689,7 @@ async function importCommandes() {
                 total_paid: totalProductsTtc.toFixed(6),
                 total_paid_tax_incl: totalProductsTtc.toFixed(6),
                 total_paid_tax_excl: totalProductsHt.toFixed(6),
-                total_paid_real: totalProductsTtc.toFixed(6),
+                total_paid_real: '0.000000',
                 total_products: totalProductsHt.toFixed(6),
                 total_products_wt: totalProductsTtc.toFixed(6),
                 total_shipping: 0,
@@ -700,6 +727,28 @@ async function importCommandes() {
                 continue;
             }
 
+            // Creer le paiement manuellement via order_payments avec la bonne date
+            // Cela evite le double paiement et permet de controler la date
+            if (totalProductsTtc > 0) {
+                try {
+                    const orderPaymentXml = buildOrderPaymentXml({
+                        order_reference: '',
+                        id_order: orderId,
+                        id_currency: defaultCurrencyId,
+                        amount: totalProductsTtc.toFixed(6),
+                        payment_method: paymentInfo.payment,
+                        transaction_id: '',
+                        date_add: dateAdd
+                    });
+                    await api.post('/order_payments', orderPaymentXml, {
+                        headers: { 'Content-Type': 'application/xml' }
+                    });
+                } catch (payErr) {
+                    console.warn('Creation paiement order_payments echouee:', payErr);
+                }
+            }
+
+            // Appliquer l etat uniquement si defini dans le CSV
             if (orderStateId) {
                 const historyXml = buildOrderHistoryXml({
                     id_order: orderId,

@@ -1,0 +1,395 @@
+{
+    "order_states": [
+        {
+            "id": 2,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "Paiement accepté"
+                },
+                {
+                    "id": "2",
+                    "value": "Fandoavam-bola nekena"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": "payment"
+                },
+                {
+                    "id": "2",
+                    "value": "payment"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "En cours de préparation"
+                },
+                {
+                    "id": "2",
+                    "value": "Processing in progress"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": "preparation"
+                },
+                {
+                    "id": "2",
+                    "value": "preparation"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "Expédié"
+                },
+                {
+                    "id": "2",
+                    "value": "Shipped"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": "shipped"
+                },
+                {
+                    "id": "2",
+                    "value": "shipped"
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "Livré"
+                },
+                {
+                    "id": "2",
+                    "value": "Voatolotra"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": ""
+                },
+                {
+                    "id": "2",
+                    "value": ""
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "Annulé"
+                },
+                {
+                    "id": "2",
+                    "value": "Nofoanana"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": "order_canceled"
+                },
+                {
+                    "id": "2",
+                    "value": "order_canceled"
+                }
+            ]
+        },
+        {
+            "id": 7,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "Remboursé"
+                },
+                {
+                    "id": "2",
+                    "value": "Refunded"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": "refund"
+                },
+                {
+                    "id": "2",
+                    "value": "refund"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "Erreur de paiement"
+                },
+                {
+                    "id": "2",
+                    "value": "Hadisoana amin'ny fandoavam-bola"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": "payment_error"
+                },
+                {
+                    "id": "2",
+                    "value": "payment_error"
+                }
+            ]
+        },
+        {
+            "id": 9,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "En attente de réapprovisionnement (payé)"
+                },
+                {
+                    "id": "2",
+                    "value": "On backorder (paid)"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": "outofstock"
+                },
+                {
+                    "id": "2",
+                    "value": "outofstock"
+                }
+            ]
+        },
+        {
+            "id": 11,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "Paiement à distance accepté"
+                },
+                {
+                    "id": "2",
+                    "value": "Remote payment accepted"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": "payment"
+                },
+                {
+                    "id": "2",
+                    "value": "payment"
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "En attente de réapprovisionnement (non payé)"
+                },
+                {
+                    "id": "2",
+                    "value": "On backorder (not paid)"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": "outofstock"
+                },
+                {
+                    "id": "2",
+                    "value": "outofstock"
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "En attente de paiement à la livraison"
+                },
+                {
+                    "id": "2",
+                    "value": "Awaiting Cash On Delivery validation"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": "cashondelivery"
+                },
+                {
+                    "id": "2",
+                    "value": "cashondelivery"
+                }
+            ]
+        },
+        {
+            "id": 14,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "En attente de paiement"
+                },
+                {
+                    "id": "2",
+                    "value": "Waiting for payment"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": ""
+                },
+                {
+                    "id": "2",
+                    "value": ""
+                }
+            ]
+        },
+        {
+            "id": 15,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "Remboursement partiel"
+                },
+                {
+                    "id": "2",
+                    "value": "Partial refund"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": ""
+                },
+                {
+                    "id": "2",
+                    "value": ""
+                }
+            ]
+        },
+        {
+            "id": 16,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "Paiement partiel"
+                },
+                {
+                    "id": "2",
+                    "value": "Partial payment"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": ""
+                },
+                {
+                    "id": "2",
+                    "value": ""
+                }
+            ]
+        },
+        {
+            "id": 17,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "Autorisation. A capturer par le marchand"
+                },
+                {
+                    "id": "2",
+                    "value": "Authorized. To be captured by merchant"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": ""
+                },
+                {
+                    "id": "2",
+                    "value": ""
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "En attente du paiement par chèque"
+                },
+                {
+                    "id": "2",
+                    "value": "Awaiting check payment"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": "cheque"
+                },
+                {
+                    "id": "2",
+                    "value": "cheque"
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "name": [
+                {
+                    "id": "1",
+                    "value": "En attente de virement bancaire"
+                },
+                {
+                    "id": "2",
+                    "value": "Miandry ny fandoavana banky"
+                }
+            ],
+            "template": [
+                {
+                    "id": "1",
+                    "value": "bankwire"
+                },
+                {
+                    "id": "2",
+                    "value": "bankwire"
+                }
+            ]
+        }
+    ]
+}
