@@ -281,7 +281,7 @@ async function ensureAddress(idCustomer, lastname, firstname, address1) {
 
 async function loadProductByReference(reference) {
     if (productCache.value[reference]) return productCache.value[reference];
-
+ 
     const response = await api.get('/products', {
         params: {
             'filter[reference]': reference,
@@ -315,12 +315,13 @@ async function getTaxRateForGroup(groupId) {
 
     if (!rule || !rule.id_tax) {
         taxRateCache.value[groupId] = 0;
-        console.log('no taxe')
+        console.log('no taxe ' + groupId);
         return 0;
     }
 
     const taxResponse = await api.get(`/taxes/${rule.id_tax}`);
     const taxObj = parser.parse(taxResponse.data);
+    console.log('taxe obj', taxObj?.prestashop?.tax?.rate);
     const rate = parseNumber(taxObj?.prestashop?.tax?.rate) ?? 0;
     taxRateCache.value[groupId] = rate;
     return rate;
@@ -451,6 +452,7 @@ function buildCartXml(cart) {
             }
         }
     };
+    console.log('Cart XML', cart.date_add);
     return `<?xml version="1.0" encoding="UTF-8"?>\n${builder.build(cartData)}`;
 }
 
@@ -537,7 +539,6 @@ async function importCommandes() {
             const adresse = row[idxAdresse] || '';
             const achatRaw = row[idxAchat] || '';
             const etat = row[idxEtat] || '';
-
             const rowInfo = { line: i + 1, email, status: 'ok', message: 'OK' };
 
             if (!email || !nom || !adresse || !achatRaw) {
@@ -610,9 +611,10 @@ async function importCommandes() {
                     }
                 }
 
-                const taxRate = await getTaxRateForGroup(product.id_tax_rules_group);
+                const taxRate = await getTaxRateForGroup(product.id_tax_rules_group['#text']);
+                // console.log(`Product ${product.id_tax_rules_group['#text']}`);
                 const unitHt = product.price_ht + (combo ? combo.impact_ht : 0);
-                console.log('taxe: ' + taxRate + 'ht: ' + unitHt);
+                // console.log('taxe: ' + taxRate + 'ht: ' + unitHt);
                 const unitTtc = unitHt * (1 + taxRate / 100);
 
                 cartRows.push({
@@ -670,6 +672,13 @@ async function importCommandes() {
                 continue;
             }
 
+            if (etat == null || etat === '') {
+                rowInfo.status = 'warning';
+                rowInfo.message = 'Etat de la commande non defini, statut par defaut applique.';
+                results.value.push(rowInfo);
+                done.value++;
+                continue;
+            }
 
             const orderStateId = await getOrderStateId(etat);
             const paymentInfo = getPaymentInfo(etat);
