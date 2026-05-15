@@ -14,6 +14,7 @@
         Login
         <Login v-if="showLogin"/>
         <Singin v-else/>
+        <a href="/front/produits">anonyme</a>
     </div>
     <button @click="showLogin = false" v-if="showLogin">s inscrire</button>
     <button @click="showLogin = true" v-else>se connecter</button>
