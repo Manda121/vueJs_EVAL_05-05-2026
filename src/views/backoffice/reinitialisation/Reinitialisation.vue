@@ -7,6 +7,8 @@ import DeleteProduit from '../../../components/backoffice/produit/DeleteProduit.
 import DeleteCustomer from '../../../components/backoffice/customers/DeleteCustomer.vue';
 import ImportProduit from '@/components/backoffice/produit/ImportProduit.vue';
 import ImportDeclinaison from '@/components/backoffice/declinaison/ImportDeclinaison.vue';
+import ImportCommande from '@/components/backoffice/order/ImportCommande.vue';
+import ImportImages from '@/components/backoffice/images/ImportImages.vue';
 
 const running = ref(false);
 
@@ -69,5 +71,7 @@ const Reinitialiser = async () => {
 
         <ImportProduit />
         <ImportDeclinaison />
+        <ImportCommande />
+        <ImportImages />
 	</div>
 </template>

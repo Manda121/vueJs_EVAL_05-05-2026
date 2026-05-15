@@ -78,6 +78,7 @@ const buildCartContext = async () => {
     const session = getCustomerSession();
     const idCustomer = session?.id ? String(session.id) : '0';
     const idAddressDelivery = await fetchDeliveryAddressId(idCustomer);
+    const secureKey = session?.secure_key ? String(session.secure_key) : '';
 
     return {
         idCustomer,
@@ -86,7 +87,8 @@ const buildCartContext = async () => {
         idShop: '1',
         idShopGroup: '1',
         idAddressDelivery,
-        idAddressInvoice: idAddressDelivery
+        idAddressInvoice: idAddressDelivery,
+        secureKey
     };
 };
 
@@ -300,6 +302,7 @@ const buildCartXml = ({
     <id_lang>${context.idLang}</id_lang>
     <id_shop_group>${context.idShopGroup}</id_shop_group>
     <id_shop>${context.idShop}</id_shop>
+        <secure_key>${context.secureKey || ''}</secure_key>
     <associations>
       <cart_rows>
 ${cartRowsXml}

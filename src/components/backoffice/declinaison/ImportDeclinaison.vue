@@ -372,14 +372,49 @@ async function updateStock(productId, combinationId, quantity) {
 		}
 	};
 	const xml = `<?xml version="1.0" encoding="UTF-8"?>\n${builder.build(stockData)}`;
-try{
-    await api.put(`/stock_availables/${stock.id}`, xml, {
-        headers: { 'Content-Type': 'application/xml' }
+	try {
+		await api.put(`/stock_availables/${stock.id}`, xml, {
+			headers: { 'Content-Type': 'application/xml' }
+		});
+		console.log(`Stock updated for product ${productId}, combination ${combinationId}: ${quantity}`);
+	} catch (err) {
+		console.error('Erreur mise a jour stock:', err);
+	}
+	}
+
+	async function updateSimpleProductPrice(productId, priceHt) {
+	if (priceHt === null || priceHt === undefined) return;
+
+	const productResponse = await api.get(`/products/${productId}`);
+	const productObj = parser.parse(productResponse.data);
+	const product = productObj?.prestashop?.product;
+	if (!product) return;
+
+	const builder = new XMLBuilder({ format: true, attributeNamePrefix: '@_', ignoreAttributes: false });
+	const updateData = {
+		prestashop: {
+			'@_xmlns:xlink': 'http://www.w3.org/1999/xlink',
+			product: {
+				id: productId,
+				price: priceHt,
+				state: 1,
+				available_for_order: product.available_for_order ?? 1,
+				show_price: product.show_price ?? 1,
+				minimal_quantity: product.minimal_quantity ?? 1,
+				reference: product.reference,
+				active: product.active,
+				id_category_default: product.id_category_default,
+				id_tax_rules_group: product.id_tax_rules_group,
+				name: product.name,
+				link_rewrite: product.link_rewrite
+			}
+		}
+	};
+	const xml = `<?xml version="1.0" encoding="UTF-8"?>\n${builder.build(updateData)}`;
+
+	await api.put(`/products/${productId}`, xml, {
+		headers: { 'Content-Type': 'application/xml' }
 	});
-    console.log(`Stock updated for product ${productId}, combination ${combinationId}: ${quantity}`);
-} catch (err) {
-    console.error('Erreur mise a jour stock:', err);    
-}
 }
 
 async function markProductAsHavingCombinations(productId, defaultComboId) {
@@ -469,14 +504,6 @@ async function importDeclinaisons() {
 
 			const rowInfo = { line: i + 1, reference, status: 'ok', message: 'OK' };
 
-			if (!reference || !specificite || !karazany) {
-				rowInfo.status = 'warning';
-				rowInfo.message = 'Declinaison ignoree (reference/specificite/valeur manquante).';
-				results.value.push(rowInfo);
-				done.value++;
-				continue;
-			}
-
 			const product = await loadProductByReference(reference);
 			if (!product) {
 				rowInfo.status = 'error';
@@ -493,6 +520,22 @@ async function importDeclinaisons() {
 			const finalTtc = prixVenteTtc == null ? baseTtc : prixVenteTtc;
 			const impactTtc = finalTtc - baseTtc;
 			const impactHt = taxRate == 0 ? impactTtc : impactTtc / (1 + taxRate / 100);
+
+			if (!specificite || !karazany) {
+				const rawPrice = row[idxPrixTtc];
+				if (rawPrice !== undefined && rawPrice !== null && String(rawPrice).trim() !== '') {
+					const newPriceHt = taxRate == 0 ? finalTtc : finalTtc / (1 + taxRate / 100);
+					await updateSimpleProductPrice(product.id, newPriceHt.toFixed(6));
+					console.log(`Price updated for simple product ${product.id}: ${rawPrice}`);
+				}
+				if (stockInitial !== null) {
+					await updateStock(product.id, 0, stockInitial);
+				}
+				rowInfo.message = 'Produit simple mis a jour (stock/prix).';
+				results.value.push(rowInfo);
+				done.value++;
+				continue;
+			}
 
 			const optionId = await ensureOption(specificite);
 			if (!optionId) {
