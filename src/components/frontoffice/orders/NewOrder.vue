@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 import Loading from '@/components/inc/Loading.vue';
@@ -371,6 +371,32 @@ const buildCartUpdateXml = (cart, rows, secureKey, idCustomer) => {
     return `<?xml version="1.0" encoding="UTF-8"?>\n${builder.build(cartData)}`;
 };
 
+const updateCartAddresses = async (cartId, addressId) => {
+    if (!cartId || !addressId) return;
+
+    const cartResponse = await api.get('/carts/' + cartId, {
+        params: { display: 'full' }
+    });
+
+    const cartData = parser.parse(cartResponse.data)?.prestashop?.cart;
+    if (!cartData) return;
+
+    const rows = normalizeToArray(cartData?.associations?.cart_rows?.cart_row);
+    cartData.id_address_delivery = addressId;
+    cartData.id_address_invoice = addressId;
+
+    const sessionCustomerId = customer_session.value?.id ? String(customer_session.value.id) : '0';
+    let secureKey = customer_session.value?.secure_key ? String(customer_session.value.secure_key) : '';
+    if (!secureKey && sessionCustomerId !== '0') {
+        secureKey = await fetchCustomerSecureKey(sessionCustomerId);
+    }
+
+    const cartXml = buildCartUpdateXml(cartData, rows, secureKey, sessionCustomerId);
+    await api.put('/carts/' + cartData.id, cartXml, {
+        headers: { 'Content-Type': 'application/xml' }
+    });
+};
+
 const buildOrderRow = async (row) => {
     const response = await api.get('/products/' + row.id_product, {
         params: { display: 'full' }
@@ -450,6 +476,15 @@ const createOrder = async () => {
             });
             cartData.secure_key = secureKey;
             cartData.id_customer = sessionCustomerId;
+        }
+
+        if (selectedAddressId.value && String(cartData.id_address_delivery || '') !== String(selectedAddressId.value)) {
+            cartData.id_address_delivery = selectedAddressId.value;
+            cartData.id_address_invoice = selectedAddressId.value;
+            const cartXml = buildCartUpdateXml(cartData, rows, secureKey, sessionCustomerId);
+            await api.put('/carts/' + cartData.id, cartXml, {
+                headers: { 'Content-Type': 'application/xml' }
+            });
         }
 
         const orderRows = [];
@@ -551,6 +586,18 @@ onMounted(() => {
         warning.value = 'Vous devez avoir des produits dans votre panier pour passer une commande.';
     }
     fetchAddresses();
+});
+
+watch(selectedAddressId, async (newId, oldId) => {
+    if (!newId || newId === oldId) return;
+    refreshSession();
+    const cartId = cart_session.value?.idCart;
+    if (!cartId) return;
+    try {
+        await updateCartAddresses(cartId, newId);
+    } catch (err) {
+        console.error('Erreur mise a jour adresse panier:', err);
+    }
 });
 </script>
 
