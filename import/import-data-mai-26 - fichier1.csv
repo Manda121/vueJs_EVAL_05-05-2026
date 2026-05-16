@@ -3,3 +3,6 @@ date_availability_produit,nom,reference,prix_ttc,Taxe,categorie,prix_achat
 02/05/2026,Pantalon,P_01,"18,99","11,65%",Akanjo,"14,33"
 08/05/2026,Casquette,C_03,5,"5,60%",Accessoire,2
 08/05/2026,Montre,M_02,56,"5,60%",Accessoire,40
+10/05/2026,Chaussures,CH_04,45,"20,00%",Kiraro,25
+12/05/2026,Sac a dos,S_05,29.99,"20,00%",Accessoire,15
+14/05/2026,Lunettes,L_06,15,"5,60%",Accessoire,8

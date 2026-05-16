@@ -60,8 +60,6 @@ function disconnect() {
                 <span v-if="panier_session && panier_session.idCart">({{ panier_session.idCart }})</span>
             </RouterLink>
             <RouterLink to="/front/commandes">commandes</RouterLink>
-            <RouterLink to="/back/commandes">back_commande</RouterLink>
-            <RouterLink to="/reinitialisation">back_produits</RouterLink>
 
             <template v-if="!customer_session">
                 <button @click="connect = !connect">

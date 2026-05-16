@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { getUserSession, requiresBackofficeAuth } from '@/utils/backStorage'
 import Home from '../views/Home.vue'
 import Customer from '../views/customers/Customer.vue'
 import CustomerDetails from '../views/customers/CustomerDetails.vue'
@@ -13,12 +14,18 @@ import AddresseFO from '../views/frontoffice/addresse/Addresse.vue'
 import NewOrderFO from '../views/frontoffice/commandes/NewOrder.vue'
 import ListeOrderFO from '@/views/frontoffice/orders/ListeOrder.vue'
 import ListeOrderBO from '@/views/backoffice/order/ListeOrder.vue'
+import Dashboard from '@/views/backoffice/Dashoboard/Dashboard.vue'
 
 const routes = [
   {
     path: '/',
     name: 'loginFO',
     component: LoginFO
+  },
+  {
+    path: '/back',
+    name: 'Dashboard',
+    component: Dashboard
   },
   {
     path: '/back/commandes',
@@ -102,6 +109,14 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+router.beforeEach((to, from, next) => {
+  if (requiresBackofficeAuth(to.path) && !getUserSession()) {
+    next('/login')
+  } else {
+    next()
+  }
 })
 
 export default router

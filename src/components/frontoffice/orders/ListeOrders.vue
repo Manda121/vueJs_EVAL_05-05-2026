@@ -49,6 +49,7 @@ const fetchOrders = async () => {
                 // On extrait le nom de l'état (souvent dans la première langue disponible)
                 const stateName = stateJson?.prestashop?.order_state?.name?.language || 'État inconnu';
                 order.status_label = Array.isArray(stateName) ? stateName[0] : stateName;
+                order.isCommande = true; // Marqueur pour différencier les commandes des paniers
             } catch (e) {
                 order.status_label = "Erreur état";
             }

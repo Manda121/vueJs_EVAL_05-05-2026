@@ -1,14 +1,5 @@
 <script setup>
 import Listecustomer from '../../components/backoffice/customers/Listecustomer.vue';
-import { useRouter } from 'vue-router';
-
-const router = useRouter();
-
-const user_session = JSON.parse(localStorage.getItem('user_session'));
-
-if (!user_session) {
-    router.push('/login');
-}
 </script>
 
 <template>
