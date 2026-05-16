@@ -281,7 +281,7 @@ async function ensureAddress(idCustomer, lastname, firstname, address1) {
 
 async function loadProductByReference(reference) {
     if (productCache.value[reference]) return productCache.value[reference];
- 
+
     const response = await api.get('/products', {
         params: {
             'filter[reference]': reference,
@@ -423,7 +423,6 @@ function getPaymentInfo(etat) {
     if (normalized.includes('erreur')) {
         return { module: 'ps_checkpayment', payment: 'Erreur de paiement' };
     }
-    // Etat vide ou inconnu : on utilise un module neutre sans declenchement de paiement automatique
     return { module: 'ps_checkpayment', payment: 'Paiement' };
 }
 
@@ -433,6 +432,7 @@ function buildCartXml(cart) {
         prestashop: {
             '@_xmlns:xlink': 'http://www.w3.org/1999/xlink',
             cart: {
+                id: cart.id || undefined,
                 id_customer: cart.id_customer,
                 id_address_delivery: cart.id_address_delivery,
                 id_address_invoice: cart.id_address_invoice,
@@ -473,6 +473,7 @@ function buildOrderPaymentXml(payment) {
         prestashop: {
             '@_xmlns:xlink': 'http://www.w3.org/1999/xlink',
             order_payment: {
+                id: payment.id || undefined,
                 order_reference: payment.order_reference,
                 id_currency: payment.id_currency,
                 amount: payment.amount,
@@ -494,6 +495,207 @@ function buildOrderHistoryXml(history) {
         }
     };
     return `<?xml version="1.0" encoding="UTF-8"?>\n${builder.build(historyData)}`;
+}
+
+function listFromPrestaShop(node) {
+    if (!node) return [];
+    return Array.isArray(node) ? node : [node];
+}
+
+async function putResourceDates(resourceName, entityName, payload) {
+    const builder = new XMLBuilder({ format: true, attributeNamePrefix: '@_', ignoreAttributes: false });
+    const container = {
+        prestashop: {
+            '@_xmlns:xlink': 'http://www.w3.org/1999/xlink',
+            [entityName]: payload
+        }
+    };
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n${builder.build(container)}`;
+    await api.put(`/${resourceName}/${payload.id}`, xml, {
+        headers: { 'Content-Type': 'application/xml' }
+    });
+}
+
+async function syncCartDates(cartId, cartPayload, dateAdd) {
+    cartPayload.id = cartId;
+    cartPayload.date_add = dateAdd;
+    cartPayload.date_upd = dateAdd;
+    await putResourceDates('carts', 'cart', cartPayload);
+}
+
+async function syncOrderRelatedDates(orderId, dateAdd) {
+    // 1. Récupération complète de la commande
+    const orderGetResponse = await api.get(`/orders/${orderId}`);
+    const rawOrder = parser.parse(orderGetResponse.data)?.prestashop?.order;
+    
+    let orderReference = '';
+
+    if (rawOrder) {
+        // Sauvegarde de la référence pour l'étape des paiements plus bas
+        orderReference = rawOrder.reference || '';
+
+        // Nettoyage strict pour éviter les erreurs de parsing XML
+        const cleanedOrder = {
+            id: rawOrder.id,
+            id_address_delivery: typeof rawOrder.id_address_delivery === 'object' ? rawOrder.id_address_delivery['#text'] : rawOrder.id_address_delivery,
+            id_address_invoice: typeof rawOrder.id_address_invoice === 'object' ? rawOrder.id_address_invoice['#text'] : rawOrder.id_address_invoice,
+            id_cart: typeof rawOrder.id_cart === 'object' ? rawOrder.id_cart['#text'] : rawOrder.id_cart,
+            id_currency: typeof rawOrder.id_currency === 'object' ? rawOrder.id_currency['#text'] : rawOrder.id_currency,
+            id_lang: typeof rawOrder.id_lang === 'object' ? rawOrder.id_lang['#text'] : rawOrder.id_lang,
+            id_customer: typeof rawOrder.id_customer === 'object' ? rawOrder.id_customer['#text'] : rawOrder.id_customer,
+            id_carrier: typeof rawOrder.id_carrier === 'object' ? rawOrder.id_carrier['#text'] : rawOrder.id_carrier,
+            current_state: typeof rawOrder.current_state === 'object' ? rawOrder.current_state['#text'] : rawOrder.current_state,
+            module: rawOrder.module,
+            invoice_number: rawOrder.invoice_number,
+            invoice_date: rawOrder.invoice_date,
+            delivery_number: rawOrder.delivery_number,
+            delivery_date: rawOrder.delivery_date,
+            valid: rawOrder.valid,
+            shipping_number: typeof rawOrder.shipping_number === 'object' ? (rawOrder.shipping_number['#text'] || '') : (rawOrder.shipping_number || ''),
+            note: rawOrder.note || '',
+            id_shop_group: rawOrder.id_shop_group,
+            id_shop: rawOrder.id_shop,
+            secure_key: rawOrder.secure_key,
+            payment: rawOrder.payment,
+            recyclable: rawOrder.recyclable,
+            gift: rawOrder.gift,
+            gift_message: rawOrder.gift_message || '',
+            mobile_theme: rawOrder.mobile_theme,
+            total_discounts: rawOrder.total_discounts,
+            total_discounts_tax_incl: rawOrder.total_discounts_tax_incl,
+            total_discounts_tax_excl: rawOrder.total_discounts_tax_excl,
+            total_paid: rawOrder.total_paid,
+            total_paid_tax_incl: rawOrder.total_paid_tax_incl,
+            total_paid_tax_excl: rawOrder.total_paid_tax_excl,
+            total_paid_real: rawOrder.total_paid_real,
+            total_products: rawOrder.total_products,
+            total_products_wt: rawOrder.total_products_wt,
+            total_shipping: rawOrder.total_shipping,
+            total_shipping_tax_incl: rawOrder.total_shipping_tax_incl,
+            total_shipping_tax_excl: rawOrder.total_shipping_tax_excl,
+            carrier_tax_rate: rawOrder.carrier_tax_rate,
+            total_wrapping: rawOrder.total_wrapping,
+            total_wrapping_tax_incl: rawOrder.total_wrapping_tax_incl,
+            total_wrapping_tax_excl: rawOrder.total_wrapping_tax_excl,
+            round_mode: rawOrder.round_mode,
+            round_type: rawOrder.round_type,
+            conversion_rate: rawOrder.conversion_rate,
+            reference: rawOrder.reference,
+            // Injection des dates du CSV
+            date_add: dateAdd,
+            date_upd: dateAdd
+        };
+        
+        // Exécution du PUT propre
+        await putResourceDates('orders', 'order', cleanedOrder);
+    }
+
+    // 2. Historique des États (Order History)
+    const historiesResponse = await api.get('/order_histories', {
+        params: { 'filter[id_order]': orderId, display: 'full' }
+    });
+    const histories = listFromPrestaShop(
+        parser.parse(historiesResponse.data)?.prestashop?.order_histories?.order_history
+    );
+    for (const history of histories) {
+        if (!history?.id) continue;
+        await putResourceDates('order_histories', 'order_history', {
+            id: history.id,
+            id_order: orderId,
+            id_order_state: history.id_order_state,
+            id_employee: history.id_employee ?? 0,
+            date_add: dateAdd
+        });
+    }
+
+    // 3. Transporteurs de la commande (Order Carriers)
+    const carriersResponse = await api.get('/order_carriers', {
+        params: { 'filter[id_order]': orderId, display: 'full' }
+    });
+    const carriers = listFromPrestaShop(
+        parser.parse(carriersResponse.data)?.prestashop?.order_carriers?.order_carrier
+    );
+    for (const carrier of carriers) {
+        if (!carrier?.id) continue;
+        await putResourceDates('order_carriers', 'order_carrier', {
+            id: carrier.id,
+            id_order: orderId,
+            id_carrier: carrier.id_carrier,
+            weight: carrier.weight ?? 0,
+            shipping_cost_tax_excl: carrier.shipping_cost_tax_excl ?? 0,
+            shipping_cost_tax_incl: carrier.shipping_cost_tax_incl ?? 0,
+            date_add: dateAdd
+        });
+    }
+
+    // 4. CORRECTION ICI : Paiements de la commande (Order Payments)
+    if (orderReference) {
+        const paymentsResponse = await api.get('/order_payments', {
+            params: { 'filter[order_reference]': orderReference, display: 'full' }
+        });
+        const payments = listFromPrestaShop(
+            parser.parse(paymentsResponse.data)?.prestashop?.order_payments?.order_payment
+        );
+        for (const payment of payments) {
+            if (!payment?.id) continue;
+            await putResourceDates('order_payments', 'order_payment', {
+                id: payment.id,
+                order_reference: orderReference,
+                id_currency: payment.id_currency,
+                amount: payment.amount,
+                payment_method: payment.payment_method,
+                transaction_id: payment.transaction_id || '',
+                date_add: dateAdd
+            });
+        }
+    }
+
+    // 5. Factures de la commande (Order Invoices)
+    const invoicesResponse = await api.get('/order_invoices', {
+        params: { 'filter[id_order]': orderId, display: 'full' }
+    });
+    const invoices = listFromPrestaShop(
+        parser.parse(invoicesResponse.data)?.prestashop?.order_invoices?.order_invoice
+    );
+    for (const invoice of invoices) {
+        if (!invoice?.id) continue;
+        await putResourceDates('order_invoices', 'order_invoice', {
+            id: invoice.id,
+            id_order: orderId,
+            number: invoice.number,
+            delivery_number: invoice.delivery_number ?? 0,
+            delivery_date: invoice.delivery_date || '0000-00-00 00:00:00',
+            total_discount_tax_excl: invoice.total_discount_tax_excl ?? 0,
+            total_discount_tax_incl: invoice.total_discount_tax_incl ?? 0,
+            total_paid_tax_excl: invoice.total_paid_tax_excl ?? 0,
+            total_paid_tax_incl: invoice.total_paid_tax_incl ?? 0,
+            total_products: invoice.total_products ?? 0,
+            total_products_wt: invoice.total_products_wt ?? 0,
+            total_shipping_tax_excl: invoice.total_shipping_tax_excl ?? 0,
+            total_shipping_tax_incl: invoice.total_shipping_tax_incl ?? 0,
+            shipping_tax_computation_method: invoice.shipping_tax_computation_method ?? 0,
+            total_wrapping_tax_excl: invoice.total_wrapping_tax_excl ?? 0,
+            total_wrapping_tax_incl: invoice.total_wrapping_tax_incl ?? 0,
+            note: invoice.note || '',
+            date_add: dateAdd
+        });
+    }
+}
+
+async function applyCsvDates(cartId, orderId, cartPayload, dateAdd) {
+    try {
+        await syncCartDates(cartId, cartPayload, dateAdd);
+    } catch (err) {
+        console.warn('Mise a jour dates panier echouee:', err);
+    }
+
+    if (orderId) {
+        try {
+            await syncOrderRelatedDates(orderId, dateAdd);
+        } catch (err) {
+            console.warn('Mise a jour dates liees commande echouee:', err);
+        }
+    }
 }
 
 async function importCommandes() {
@@ -612,9 +814,7 @@ async function importCommandes() {
                 }
 
                 const taxRate = await getTaxRateForGroup(product.id_tax_rules_group['#text']);
-                // console.log(`Product ${product.id_tax_rules_group['#text']}`);
                 const unitHt = product.price_ht + (combo ? combo.impact_ht : 0);
-                // console.log('taxe: ' + taxRate + 'ht: ' + unitHt);
                 const unitTtc = unitHt * (1 + taxRate / 100);
 
                 cartRows.push({
@@ -634,7 +834,7 @@ async function importCommandes() {
                 continue;
             }
 
-            const cartXml = buildCartXml({
+            const cartPayload = {
                 id_customer: customer.id,
                 id_address_delivery: addressId,
                 id_address_invoice: addressId,
@@ -644,10 +844,10 @@ async function importCommandes() {
                 id_shop: defaultShopId,
                 id_shop_group: defaultShopGroupId,
                 secure_key: customer.secure_key,
-                date_add: dateAdd,
-                date_upd: dateAdd,
                 rows: cartRows
-            });
+            };
+
+            const cartXml = buildCartXml(cartPayload);
 
             const cartResponse = await api.post('/carts', cartXml, {
                 headers: { 'Content-Type': 'application/xml' }
@@ -672,19 +872,23 @@ async function importCommandes() {
                 continue;
             }
 
+            // --- CAS PARTICULIER EXPLICITE : ÉTAT VIDE -> SEULEMENT LE PANIER ---
             if (etat == null || etat === '') {
+                try {
+                    await syncCartDates(cartId, cartPayload, dateAdd);
+                } catch (cartDateErr) {
+                    console.warn('Mise a jour dates panier seule echouee:', cartDateErr);
+                }
                 rowInfo.status = 'warning';
                 rowInfo.message = 'Etat de la commande non defini, statut par defaut applique.';
                 results.value.push(rowInfo);
                 done.value++;
-                continue;
+                continue; 
             }
 
             const orderStateId = await getOrderStateId(etat);
             const paymentInfo = getPaymentInfo(etat);
 
-            // On cree la commande avec total_paid_real=0 pour eviter que PrestaShop
-            // cree automatiquement un paiement. On gerera le paiement manuellement.
             const orderXml = buildOrderXml({
                 id_cart: cartId,
                 id_customer: customer.id,
@@ -708,9 +912,7 @@ async function importCommandes() {
                 total_discounts_tax_incl: 0,
                 total_discounts_tax_excl: 0,
                 conversion_rate: 1,
-                current_state: orderStateId || 0,
-                date_add: dateAdd,
-                date_upd: dateAdd
+                current_state: orderStateId || 0
             });
 
             const orderResponse = await api.post('/orders', orderXml, {
@@ -736,8 +938,6 @@ async function importCommandes() {
                 continue;
             }
 
-            // Creer le paiement manuellement via order_payments avec la bonne date
-            // Cela evite le double paiement et permet de controler la date
             if (totalProductsTtc > 0) {
                 try {
                     const orderPaymentXml = buildOrderPaymentXml({
@@ -757,18 +957,24 @@ async function importCommandes() {
                 }
             }
 
-            // Appliquer l etat uniquement si defini dans le CSV
             if (orderStateId) {
-                const historyXml = buildOrderHistoryXml({
-                    id_order: orderId,
-                    id_order_state: orderStateId,
-                    date_add: dateAdd,
-                    id_employee: 0
-                });
-                await api.post('/order_histories?sendemail=0', historyXml, {
-                    headers: { 'Content-Type': 'application/xml' }
-                });
+                try {
+                    const historyXml = buildOrderHistoryXml({
+                        id_order: orderId,
+                        id_order_state: orderStateId,
+                        date_add: dateAdd,
+                        id_employee: 0
+                    });
+                    await api.post('/order_histories?sendemail=0', historyXml, {
+                        headers: { 'Content-Type': 'application/xml' }
+                    });
+                } catch (histErr) {
+                    console.warn('Creation historique order_histories echouee:', histErr);
+                }
             }
+
+            // Exécution finale et sécurisée des modifications de dates par PUT
+            await applyCsvDates(cartId, orderId, cartPayload, dateAdd);
 
             results.value.push(rowInfo);
             done.value++;
