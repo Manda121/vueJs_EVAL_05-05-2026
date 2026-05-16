@@ -528,9 +528,14 @@ async function syncOrderRelatedDates(orderId, dateAdd) {
     const orderGetResponse = await api.get(`/orders/${orderId}`);
     const rawOrder = parser.parse(orderGetResponse.data)?.prestashop?.order;
     
+    let orderReference = '';
+
     if (rawOrder) {
-        // Nettoyage strict pour éviter les erreurs de parsing XML (ex: attributs xlink, notFilterable)
-        const fullOrder = {
+        // Sauvegarde de la référence pour l'étape des paiements plus bas
+        orderReference = rawOrder.reference || '';
+
+        // Nettoyage strict pour éviter les erreurs de parsing XML
+        const cleanedOrder = {
             id: rawOrder.id,
             id_address_delivery: typeof rawOrder.id_address_delivery === 'object' ? rawOrder.id_address_delivery['#text'] : rawOrder.id_address_delivery,
             id_address_invoice: typeof rawOrder.id_address_invoice === 'object' ? rawOrder.id_address_invoice['#text'] : rawOrder.id_address_invoice,
@@ -581,11 +586,11 @@ async function syncOrderRelatedDates(orderId, dateAdd) {
             date_upd: dateAdd
         };
         
-        // Exécution du PUT propre sans attributs parasites
-        await putResourceDates('orders', 'order', fullOrder);
+        // Exécution du PUT propre
+        await putResourceDates('orders', 'order', cleanedOrder);
     }
 
-    // 2. Historique des États (Order History) ... [Reste du code identique]
+    // 2. Historique des États (Order History)
     const historiesResponse = await api.get('/order_histories', {
         params: { 'filter[id_order]': orderId, display: 'full' }
     });
@@ -623,10 +628,10 @@ async function syncOrderRelatedDates(orderId, dateAdd) {
         });
     }
 
-    // 4. Paiements de la commande (Order Payments)
-    if (fullOrder && fullOrder.reference) {
+    // 4. CORRECTION ICI : Paiements de la commande (Order Payments)
+    if (orderReference) {
         const paymentsResponse = await api.get('/order_payments', {
-            params: { 'filter[order_reference]': fullOrder.reference, display: 'full' }
+            params: { 'filter[order_reference]': orderReference, display: 'full' }
         });
         const payments = listFromPrestaShop(
             parser.parse(paymentsResponse.data)?.prestashop?.order_payments?.order_payment
@@ -635,7 +640,7 @@ async function syncOrderRelatedDates(orderId, dateAdd) {
             if (!payment?.id) continue;
             await putResourceDates('order_payments', 'order_payment', {
                 id: payment.id,
-                order_reference: fullOrder.reference,
+                order_reference: orderReference,
                 id_currency: payment.id_currency,
                 amount: payment.amount,
                 payment_method: payment.payment_method,
