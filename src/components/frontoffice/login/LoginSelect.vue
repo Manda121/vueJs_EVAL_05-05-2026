@@ -8,6 +8,7 @@ import Loading from '@/components/inc/Loading.vue';
 import Error from '@/components/inc/Error.vue';
 
 import { useRouter } from 'vue-router';
+import { setCustomerSession } from '@/utils/frontStorage';
 
 const router = useRouter();
 
@@ -57,7 +58,7 @@ const Login = async () => {
 
             if (validPassword) {
 
-                localStorage.setItem('customer_session', JSON.stringify(user));
+                setCustomerSession(user);
                 router.push('/front/produits');
                 console.log("Succès !");
             } else {

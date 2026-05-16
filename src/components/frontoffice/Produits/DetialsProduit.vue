@@ -6,6 +6,12 @@ import Loading from '../../inc/Loading.vue';
 import Warning from '../../inc/Warning.vue';
 import Error from '../../inc/Error.vue';
 import AddToCartForm from './AddToCartForm.vue';
+import {
+    getCustomerSession,
+    getStoredCart,
+    saveStoredCart,
+    removeStoredCart
+} from '@/utils/frontStorage';
 
 const product = ref(null);
 const loading = ref(true);
@@ -27,24 +33,6 @@ const api = axios.create({
         'Authorization': 'Basic ' + btoa('4XZXKK1Y8MMXSCYUMHJZ8J26JUY4W8TB' + ':')
     }
 });
-
-const CART_STORAGE_KEY = 'cart_session';
-
-const getCustomerSession = () => {
-    return JSON.parse(localStorage.getItem('customer_session'));
-};
-
-const getStoredCart = () => {
-    try {
-        return JSON.parse(localStorage.getItem(CART_STORAGE_KEY));
-    } catch (err) {
-        return null;
-    }
-};
-
-const saveStoredCart = (cart) => {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
-};
 
 const fetchDeliveryAddressId = async (customerId) => {
     if (!customerId || String(customerId) === '0') {
@@ -443,7 +431,7 @@ const addToCart = async () => {
         if (storedCartId) {
             const remoteCart = await fetchCartById(storedCartId);
             if (!remoteCart) {
-                localStorage.removeItem(CART_STORAGE_KEY);
+                removeStoredCart();
             }
         }
 

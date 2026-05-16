@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import axios from 'axios';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 import Loading from '@/components/inc/Loading.vue';
@@ -9,6 +9,15 @@ import Login from '../login/Login.vue';
 import Singin from '../login/Singin.vue';
 import NewAddresse from '../adresse/NewAddresse.vue';
 import UpdateAddresse from '../adresse/UpdateAddresse.vue';
+import {
+    getCustomerSession,
+    getStoredCart,
+    removeCustomerSession,
+    removeStoredCart,
+    isGuestCustomer,
+    canPlaceOrder,
+    onFrontStorageChange
+} from '@/utils/frontStorage';
 
 const loading = ref(false);
 const warning = ref(null);
@@ -50,8 +59,8 @@ const api = axios.create({
 });
 
 const refreshSession = () => {
-    customer_session.value = JSON.parse(localStorage.getItem('customer_session'));
-    cart_session.value = JSON.parse(localStorage.getItem('cart_session'));
+    customer_session.value = getCustomerSession();
+    cart_session.value = getStoredCart();
 };
 
 const toggleAuthForm = (mode) => {
@@ -60,9 +69,9 @@ const toggleAuthForm = (mode) => {
 };
 
 const disconnect = () => {
-    localStorage.removeItem('customer_session');
+    removeCustomerSession();
     customer_session.value = null;
-    cart_session.value = null;
+    cart_session.value = getStoredCart();
     warning.value = 'Vous etes deconnecte.';
     etape.value = 1;
 };
@@ -304,6 +313,10 @@ const ensureStep1 = () => {
         warning.value = 'Vous devez vous connecter ou vous inscrire.';
         return;
     }
+    if (isGuestCustomer(customer_session.value)) {
+        warning.value = 'Compte invite (is_guest) : commande impossible.';
+        return;
+    }
     goToStep(2);
 };
 
@@ -440,6 +453,12 @@ const createOrder = async () => {
     warning.value = null;
     error.value = null;
 
+    refreshSession();
+    if (!canPlaceOrder(customer_session.value)) {
+        warning.value = 'Compte invite (is_guest) : commande impossible.';
+        return;
+    }
+
     if (!cart_session.value?.idCart) {
         warning.value = 'Aucun panier disponible.';
         return;
@@ -558,7 +577,8 @@ const createOrder = async () => {
         });
 
         warning.value = 'Commande creee.';
-        localStorage.removeItem('cart_session');
+        removeStoredCart();
+        cart_session.value = null;
     } catch (err) {
         error.value = 'Erreur lors de la creation de la commande.';
         console.error('Details:', err);
@@ -576,16 +596,42 @@ const refreshAddresses = () => {
     fetchAddresses();
 };
 
+let interval = null;
+let stopListen = null;
+
 onMounted(() => {
     refreshSession();
     if (!customer_session.value) {
         etape.value = 1;
-        return;
-    }
-    if (!cart_session.value?.idCart) {
+    } else if (isGuestCustomer(customer_session.value)) {
+        warning.value = 'Compte invite (is_guest) : vous ne pouvez pas passer commande.';
+        etape.value = 1;
+    } else if (!cart_session.value?.idCart) {
         warning.value = 'Vous devez avoir des produits dans votre panier pour passer une commande.';
+    } else {
+        fetchAddresses();
     }
-    fetchAddresses();
+
+    interval = setInterval(refreshSession, 500);
+    stopListen = onFrontStorageChange(function (detail) {
+        refreshSession();
+        if (detail.type === 'customer' && customer_session.value && canPlaceOrder(customer_session.value)) {
+            warning.value = null;
+            if (etape.value === 1) {
+                fetchAddresses();
+            }
+        }
+        if (detail.type === 'address' && customer_session.value && etape.value >= 2) {
+            fetchAddresses();
+        }
+    });
+});
+
+onUnmounted(() => {
+    clearInterval(interval);
+    if (stopListen) {
+        stopListen();
+    }
 });
 
 watch(selectedAddressId, async (newId, oldId) => {
@@ -614,7 +660,10 @@ watch(selectedAddressId, async (newId, oldId) => {
 
             <div v-if="customer_session">
                 <p>Client: {{ customer_session.firstname }} {{ customer_session.lastname }}</p>
-                <button @click="ensureStep1">Continuer</button>
+                <p v-if="isGuestCustomer(customer_session)" class="guest-info">
+                    Ce compte client a is_guest=1 : vous ne pouvez pas passer commande.
+                </p>
+                <button v-if="!isGuestCustomer(customer_session)" @click="ensureStep1">Continuer</button>
                 <button @click="disconnect">Changer (deconnecter)</button>
             </div>
 
@@ -685,3 +734,12 @@ watch(selectedAddressId, async (newId, oldId) => {
     <UpdateAddresse v-if="updateAddressId" v-model="updateAddressId" />
     <NewAddresse v-if="showNewAddress && addresses.length" v-model="showNewAddress" />
 </template>
+
+<style scoped>
+.guest-info {
+    color: #a15c00;
+    background: #fff8e6;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+}
+</style>

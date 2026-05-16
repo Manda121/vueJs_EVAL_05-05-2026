@@ -2,9 +2,10 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
+import { getCustomerSession, notifyAddressChange } from '@/utils/frontStorage';
 
 const create_addresse = defineModel();
-const customer_session = JSON.parse(localStorage.getItem('customer_session'));
+const customer_session = getCustomerSession();
 
 const countries = ref([]);
 const loading = ref(false);
@@ -85,6 +86,7 @@ const SaveAddress = async () => {
 		await api.post('/addresses', xmlContent, {
 			headers: { 'Content-Type': 'application/xml' }
 		});
+		notifyAddressChange();
 		create_addresse.value = null;
 	} catch (err) {
 		console.error(err.response?.data || err);

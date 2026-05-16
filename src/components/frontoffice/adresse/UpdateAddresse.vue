@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
+import { notifyAddressChange } from '@/utils/frontStorage';
 import Loading from '@/components/inc/Loading.vue';
 import Warning from '@/components/inc/Warning.vue';
 import Error from '@/components/inc/Error.vue';
@@ -110,6 +111,7 @@ const UpdateAddress = async () => {
 		await api.put('/addresses', xmlContent, {
 			headers: { 'Content-Type': 'application/xml' }
 		});
+		notifyAddressChange();
 		update_addresse.value = null;
 	} catch (err) {
 		console.error(err.response?.data || err);

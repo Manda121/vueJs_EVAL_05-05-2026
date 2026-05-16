@@ -4,6 +4,7 @@ import axios from 'axios';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 
 import { useRouter } from 'vue-router';
+import { setCustomerSession } from '@/utils/frontStorage';
 
 const rooter = useRouter();
 const parser = new XMLParser({});
@@ -96,7 +97,7 @@ const SingIn = async () => {
             return;
         }
 
-        localStorage.setItem('customer_session', JSON.stringify(createdCustomer));
+        setCustomerSession(createdCustomer);
         // rooter.push('/front/produits');
     } catch (err) {
         console.error(err.response?.data || err);

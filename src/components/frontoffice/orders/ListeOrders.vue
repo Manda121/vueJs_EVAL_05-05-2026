@@ -1,12 +1,13 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
 import { XMLParser } from 'fast-xml-parser';
 import Loading from '@/components/inc/Loading.vue';
 import Error from '@/components/inc/Error.vue';
 import Warning from '@/components/inc/Warning.vue';
+import { getCustomerSession, onFrontStorageChange } from '@/utils/frontStorage';
 
-const customer_session = ref(JSON.parse(localStorage.getItem('customer_session')));
+const customer_session = ref(getCustomerSession());
 const orders = ref([]);
 const loading = ref(false);
 const error = ref(null);
@@ -66,7 +67,37 @@ const fetchOrders = async () => {
     }
 };
 
-onMounted(fetchOrders);
+let interval = null;
+let stopListen = null;
+
+const refreshSession = () => {
+    customer_session.value = getCustomerSession();
+};
+
+onMounted(() => {
+    refreshSession();
+    fetchOrders();
+    interval = setInterval(function () {
+        const avant = customer_session.value?.id;
+        refreshSession();
+        if (customer_session.value?.id !== avant) {
+            fetchOrders();
+        }
+    }, 500);
+    stopListen = onFrontStorageChange(function (detail) {
+        refreshSession();
+        if (detail.type === 'customer' || detail.type === 'cart') {
+            fetchOrders();
+        }
+    });
+});
+
+onUnmounted(() => {
+    clearInterval(interval);
+    if (stopListen) {
+        stopListen();
+    }
+});
 </script>
 
 <template>

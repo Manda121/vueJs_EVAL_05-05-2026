@@ -1,40 +1,52 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter, RouterLink } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import Login from '@/components/frontoffice/login/Login.vue'
+import {
+    getCustomerSession,
+    getStoredCart,
+    removeCustomerSession,
+    isGuestCustomer,
+    onFrontStorageChange
+} from '@/utils/frontStorage'
 
 const connect = ref(false)
-const customer_session = ref(JSON.parse(localStorage.getItem('customer_session')))
+const customer_session = ref(getCustomerSession())
+const panier_session = ref(getStoredCart())
 
-// Fonction pour synchroniser la ref avec le localStorage
 const updateSession = () => {
-    const data = localStorage.getItem('customer_session')
-    customer_session.value = JSON.parse(data)
-    
-    // Si on vient de se connecter (data existe), on ferme le formulaire
-    if (data) {
+    const customer = getCustomerSession()
+    customer_session.value = customer
+    panier_session.value = getStoredCart()
+
+    if (customer) {
         connect.value = false
     }
 }
 
-// On écoute les changements du localStorage (utile si Login écrit dedans)
-// Note: 'storage' natif marche surtout entre onglets, 
-// donc on va aussi vérifier à intervalle court pour être sûr
 let interval = null
+let stopListen = null
 
 onMounted(() => {
-    interval = setInterval(updateSession, 500) // Vérifie toutes les 500ms
+    updateSession()
+    interval = setInterval(updateSession, 500)
+    stopListen = onFrontStorageChange(function () {
+        updateSession()
+    })
 })
 
 onUnmounted(() => {
-    clearInterval(interval) // Nettoie la mémoire
+    clearInterval(interval)
+    if (stopListen) {
+        stopListen()
+    }
 })
 
 function disconnect() {
     localStorage.removeItem('user_session')
-    localStorage.removeItem('customer_session')
-    localStorage.removeItem('cart_session')
+    removeCustomerSession()
     customer_session.value = null
+    panier_session.value = getStoredCart()
 }
 </script>
 
@@ -43,7 +55,10 @@ function disconnect() {
         <p>
             <RouterLink to="/">Acceils</RouterLink>
             <RouterLink to="/front/produits">produits</RouterLink>
-            <RouterLink to="/front/paniers">panier</RouterLink>
+            <RouterLink to="/front/paniers">
+                panier
+                <span v-if="panier_session && panier_session.idCart">({{ panier_session.idCart }})</span>
+            </RouterLink>
             <RouterLink to="/front/commandes">commandes</RouterLink>
             <RouterLink to="/back/commandes">back_commande</RouterLink>
             <RouterLink to="/reinitialisation">back_produits</RouterLink>
@@ -57,6 +72,7 @@ function disconnect() {
 
             <template v-else>
                 <span>{{ customer_session.firstname }}</span>
+                <span v-if="isGuestCustomer(customer_session)" class="guest-tag">(invite)</span>
                 <button @click="disconnect">déconnecter</button>
             </template>
         </p>
@@ -75,5 +91,9 @@ header p {
 }
 button {
     cursor: pointer;
+}
+.guest-tag {
+    font-size: 0.85em;
+    color: #666;
 }
 </style>
