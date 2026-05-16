@@ -1,12 +1,21 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, inject, watch } from 'vue';
 import axios from 'axios';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 import Loading from '../../inc/Loading.vue';
 import Warning from '../../inc/Warning.vue';
 import Error from '../../inc/Error.vue';
+import {
+    validateProduitCsv,
+    hasResultErrors,
+    isDateDDMMYYYY
+} from '@/utils/csvImportValidation';
 
-const import_csv = defineModel();
+const reinitialiserTout = inject('reinitialiserTout', null);
+
+const runSignal = defineModel('runSignal');
+const emit = defineEmits(['done']);
+const isRunning = ref(false);
 
 const fileRef = ref(null);
 const separator = ref(',');
@@ -48,18 +57,19 @@ function slugify(value) {
         .slice(0, 128);
 }
 
-function isDateValid(value) {
-    if (!value) return true;
-    return /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
 function normalizeDate(value) {
     if (!value) return '';
     const trimmed = String(value).trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
     const match = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (!match) return trimmed;
+    if (!match) return '';
     return `${match[3]}-${match[2]}-${match[1]}`;
+}
+
+async function failImport(message) {
+    if (reinitialiserTout) {
+        await reinitialiserTout();
+    }
+    error.value = message + (reinitialiserTout ? ' Reinitialisation effectuee (tout ou rien).' : '');
 }
 
 function parseCsv(text, sep) {
@@ -463,7 +473,7 @@ async function importProduits() {
     const file = fileRef.value?.files?.[0];
     if (!file) {
         warning.value = 'Choisissez un fichier CSV.';
-        return;
+        return false;
     }
 
     loading.value = true;
@@ -473,10 +483,18 @@ async function importProduits() {
         const rows = parseCsv(text, separator.value);
         if (rows.length < 2) {
             warning.value = 'Fichier CSV vide ou invalide.';
-            return;
+            return false;
         }
 
         const headers = rows[0];
+        const dataRows = rows.slice(1);
+
+        const validation = validateProduitCsv(headers, dataRows);
+        if (!validation.ok) {
+            await failImport(validation.message);
+            return false;
+        }
+
         const idxDate = findIndex(headers, ['date_availability_produit', 'date_availability', 'date']);
         const idxName = findIndex(headers, ['nom', 'name']);
         const idxReference = findIndex(headers, ['reference', 'ref']);
@@ -485,10 +503,10 @@ async function importProduits() {
         const idxCategorie = findIndex(headers, ['categorie', 'category']);
         const idxPrixAchat = findIndex(headers, ['prix_achat', 'prix achat', 'wholesale_price']);
 
-        total.value = rows.length - 1;
+        total.value = dataRows.length;
 
-        for (let i = 1; i < rows.length; i++) {
-            const row = rows[i];
+        for (let i = 0; i < dataRows.length; i++) {
+            const row = dataRows[i];
 
             const available_date = normalizeDate(row[idxDate] || '');
             const name = row[idxName] || '';
@@ -498,7 +516,7 @@ async function importProduits() {
             const categorie = row[idxCategorie] || '';
             const prixAchat = parseNumber(row[idxPrixAchat]) ?? 0;
 
-            const rowInfo = { line: i + 1, reference, status: 'ok', message: 'OK' };
+            const rowInfo = { line: i + 2, reference, status: 'ok', message: 'OK' };
 
             if (!name || !reference || prixTtc === null) {
                 rowInfo.status = 'error';
@@ -508,9 +526,9 @@ async function importProduits() {
                 continue;
             }
 
-            if (!isDateValid(available_date)) {
+            if (!isDateDDMMYYYY(row[idxDate] || '')) {
                 rowInfo.status = 'error';
-                rowInfo.message = 'Date invalide.';
+                rowInfo.message = 'Date invalide (DD/MM/YYYY).';
                 results.value.push(rowInfo);
                 done.value++;
                 continue;
@@ -563,24 +581,46 @@ async function importProduits() {
             results.value.push(rowInfo);
             done.value++;
         }
+
+        if (hasResultErrors(results.value)) {
+            await failImport('Import produits : erreurs detectees.');
+            return false;
+        }
+
+        return true;
     } catch (err) {
         if (err && err.response) {
-            error.value = `Erreur lors de l'import. Status ${err.response.status}: ${JSON.stringify(err.response.data)}`;
+            await failImport(`Erreur lors de l'import. Status ${err.response.status}: ${JSON.stringify(err.response.data)}`);
             console.error('importProduits error response:', err.response.status, err.response.data);
         } else {
-            error.value = 'Erreur lors de l\'import. ' + (err && err.message ? err.message : err);
+            await failImport('Erreur lors de l\'import. ' + (err && err.message ? err.message : err));
             console.error(err);
         }
+        return false;
     } finally {
         loading.value = false;
     }
 }
+
+watch(runSignal, async (newValue, oldValue) => {
+    if (newValue === oldValue) return;
+    if (!newValue) return;
+    if (isRunning.value) return;
+
+    isRunning.value = true;
+    let success = false;
+    try {
+        success = await importProduits();
+    } finally {
+        isRunning.value = false;
+        emit('done', success);
+    }
+});
 </script>
 
 <template>
-    <div class="popop">
-        <button @click="import_csv = false">X</button>
-        <h1>Importer des produits</h1>
+    <div>
+        <h2>Fichier 1 - Produits</h2>
 
         <input ref="fileRef" type="file" name="csv_file" id="csv_file" accept=".csv">
 
@@ -588,8 +628,6 @@ async function importProduits() {
             <option value=",">,</option>
             <option value=";">;</option>
         </select>
-
-        <button @click="importProduits" :disabled="loading">Importer</button>
 
         <Loading v-if="loading" message="Import en cours..." />
         <Warning v-if="warning" :warning="warning" />

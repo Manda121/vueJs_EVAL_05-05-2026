@@ -1,12 +1,21 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, inject, watch } from 'vue';
 import axios from 'axios';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 import Loading from '../../inc/Loading.vue';
 import Warning from '../../inc/Warning.vue';
 import Error from '../../inc/Error.vue';
+import {
+    validateCommandeCsv,
+    hasResultErrors,
+    isDateDDMMYYYY
+} from '@/utils/csvImportValidation';
 
-const import_csv = defineModel();
+const reinitialiserTout = inject('reinitialiserTout', null);
+
+const runSignal = defineModel('runSignal');
+const emit = defineEmits(['done']);
+const isRunning = ref(false);
 
 const fileRef = ref(null);
 const separator = ref(',');
@@ -116,10 +125,18 @@ function findIndex(headers, names) {
 }
 
 function normalizeDateTime(value) {
+    if (!isDateDDMMYYYY(value)) return '';
     const trimmed = String(value || '').trim();
     const match = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if (!match) return '';
     return `${match[3]}-${match[2]}-${match[1]} 00:00:00`;
+}
+
+async function failImport(message) {
+    if (reinitialiserTout) {
+        await reinitialiserTout();
+    }
+    error.value = message + (reinitialiserTout ? ' Reinitialisation effectuee (tout ou rien).' : '');
 }
 
 function parseAchat(value) {
@@ -708,7 +725,7 @@ async function importCommandes() {
     const file = fileRef.value?.files?.[0];
     if (!file) {
         warning.value = 'Choisissez un fichier CSV.';
-        return;
+        return false;
     }
 
     loading.value = true;
@@ -718,10 +735,18 @@ async function importCommandes() {
         const rows = parseCsv(text, separator.value);
         if (rows.length < 2) {
             warning.value = 'Fichier CSV vide ou invalide.';
-            return;
+            return false;
         }
 
         const headers = rows[0];
+        const dataRows = rows.slice(1);
+
+        const validation = validateCommandeCsv(headers, dataRows);
+        if (!validation.ok) {
+            await failImport(validation.message);
+            return false;
+        }
+
         const idxDate = findIndex(headers, ['date']);
         const idxNom = findIndex(headers, ['nom']);
         const idxEmail = findIndex(headers, ['email']);
@@ -730,10 +755,10 @@ async function importCommandes() {
         const idxAchat = findIndex(headers, ['achat']);
         const idxEtat = findIndex(headers, ['etat']);
 
-        total.value = rows.length - 1;
+        total.value = dataRows.length;
 
-        for (let i = 1; i < rows.length; i++) {
-            const row = rows[i];
+        for (let i = 0; i < dataRows.length; i++) {
+            const row = dataRows[i];
             const dateCsv = row[idxDate] || '';
             const nom = row[idxNom] || '';
             const email = row[idxEmail] || '';
@@ -741,7 +766,7 @@ async function importCommandes() {
             const adresse = row[idxAdresse] || '';
             const achatRaw = row[idxAchat] || '';
             const etat = row[idxEtat] || '';
-            const rowInfo = { line: i + 1, email, status: 'ok', message: 'OK' };
+            const rowInfo = { line: i + 2, email, status: 'ok', message: 'OK' };
 
             if (!email || !nom || !adresse || !achatRaw) {
                 rowInfo.status = 'error';
@@ -979,24 +1004,46 @@ async function importCommandes() {
             results.value.push(rowInfo);
             done.value++;
         }
+
+        if (hasResultErrors(results.value)) {
+            await failImport('Import commandes : erreurs detectees.');
+            return false;
+        }
+
+        return true;
     } catch (err) {
         if (err && err.response) {
-            error.value = `Erreur lors de l'import. Status ${err.response.status}: ${JSON.stringify(err.response.data)}`;
+            await failImport(`Erreur lors de l'import. Status ${err.response.status}: ${JSON.stringify(err.response.data)}`);
             console.error('importCommandes error response:', err.response.status, err.response.data);
         } else {
-            error.value = 'Erreur lors de l\'import. ' + (err && err.message ? err.message : err);
+            await failImport('Erreur lors de l\'import. ' + (err && err.message ? err.message : err));
             console.error(err);
         }
+        return false;
     } finally {
         loading.value = false;
     }
 }
+
+watch(runSignal, async (newValue, oldValue) => {
+    if (newValue === oldValue) return;
+    if (!newValue) return;
+    if (isRunning.value) return;
+
+    isRunning.value = true;
+    let success = false;
+    try {
+        success = await importCommandes();
+    } finally {
+        isRunning.value = false;
+        emit('done', success);
+    }
+});
 </script>
 
 <template>
-    <div class="popop">
-        <button @click="import_csv = false">X</button>
-        <h1>Importer des commandes</h1>
+    <div>
+        <h2>Fichier 3 - Commandes</h2>
 
         <input ref="fileRef" type="file" name="csv_file" id="csv_file" accept=".csv">
 
@@ -1004,8 +1051,6 @@ async function importCommandes() {
             <option value=",">,</option>
             <option value=";">;</option>
         </select>
-
-        <button @click="importCommandes" :disabled="loading">Importer</button>
 
         <Loading v-if="loading" message="Import en cours..." />
         <Warning v-if="warning" :warning="warning" />
