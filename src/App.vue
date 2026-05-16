@@ -1,18 +1,18 @@
 <script setup>
-import Header from './components/inc/Header.vue';
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import AppFrontoffice from './AppFrontoffice.vue';
+import AppBackoffice from './AppBackoffice.vue';
+import { isBackofficeRoute } from '@/utils/backStorage';
+
+const route = useRoute();
+
+const isBackoffice = computed(() => {
+    return isBackofficeRoute(route.path);
+});
 </script>
 
 <template>
-  <Header />
-  <div id="app">
-    <router-view />
-  </div>
+    <AppBackoffice v-if="isBackoffice" />
+    <AppFrontoffice v-else />
 </template>
-
-<style>
-/* Un peu de style pour voir clair */
-#app {
-  font-family: sans-serif;
-  padding: 20px;
-}
-</style>

@@ -1,0 +1,17 @@
+<script setup>
+import Header from './components/inc/Header.vue';
+</script>
+
+<template>
+    <Header />
+    <div id="app">
+        <router-view />
+    </div>
+</template>
+
+<style>
+#app {
+    font-family: sans-serif;
+    padding: 20px;
+}
+</style>

@@ -9,6 +9,7 @@ import Wargning from '../../inc/Warning.vue';
 import Error from '../../inc/Error.vue';
 
 import { useRouter } from 'vue-router';
+import { setUserSession } from '@/utils/backStorage';
 
 const router = useRouter();
 
@@ -48,7 +49,7 @@ const Login = async () => {
             const validPassword = bcrypt.compareSync(password.value, user.passwd);
 
             if (validPassword) {
-                localStorage.setItem('user_session', JSON.stringify(user));
+                setUserSession(user);
                 router.push('/customer');
                 console.log("Succès !");
             } else {

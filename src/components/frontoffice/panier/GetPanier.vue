@@ -1,14 +1,21 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import Loading from '@/components/inc/Loading.vue';
 import Warning from '@/components/inc/Warning.vue';
 import Error from '@/components/inc/Error.vue';
 import NewOrder from '../orders/NewOrder.vue';
 import axios from 'axios';
 import { XMLParser } from 'fast-xml-parser';
+import {
+    getCustomerSession,
+    getStoredCart,
+    isGuestCustomer,
+    canPlaceOrder,
+    onFrontStorageChange
+} from '@/utils/frontStorage';
 
-const customer_session = JSON.parse(localStorage.getItem('customer_session'));
-const panier_session = ref(JSON.parse(localStorage.getItem('cart_session')));
+const customer_session = ref(getCustomerSession());
+const panier_session = ref(getStoredCart());
 
 const commander = ref(false);
 
@@ -394,7 +401,40 @@ const getComboDetails = async (id_product_attribute) => {
     }
 };
 
-onMounted(fetchPanier);
+const refreshSessions = () => {
+    customer_session.value = getCustomerSession();
+    panier_session.value = getStoredCart();
+};
+
+let interval = null;
+let stopListen = null;
+
+onMounted(() => {
+    refreshSessions();
+    fetchPanier();
+    interval = setInterval(refreshSessions, 500);
+    stopListen = onFrontStorageChange(function (detail) {
+        refreshSessions();
+        if (detail.type === 'cart' || detail.type === 'customer') {
+            fetchPanier();
+        }
+    });
+});
+
+onUnmounted(() => {
+    clearInterval(interval);
+    if (stopListen) {
+        stopListen();
+    }
+});
+
+const peutCommander = computed(() => {
+    return canPlaceOrder(customer_session.value);
+});
+
+const estInvite = computed(() => {
+    return isGuestCustomer(customer_session.value);
+});
 
 const totalPanier = computed(() => {
     const sum = produits.value.reduce((total, item) => {
@@ -408,11 +448,13 @@ const totalPanier = computed(() => {
 
 <template>
     <div>
-        <h2>Mon Panier {{ panier_session }}</h2>
-        <button @click="commander = true" v-if="!commander">commander</button>
+        <h2>Mon Panier</h2>
+        <p v-if="estInvite" class="guest-info">
+            Compte invite (is_guest) : ajout au panier seulement, pas de commande.
+        </p>
+        <button @click="commander = true" v-if="!commander && peutCommander && produits.length">commander</button>
         <button @click="commander = false" v-if="commander">Annuler</button>
         <button v-if="produits.length" type="button" @click="clearCart">Vider le panier</button>
-        <!-- <button @click="clearCart">Commander</button> -->
         <Loading v-if="loading" message="Chargement du panier..." />
         <Warning v-if="warning" :warning="warning" />
         <Error v-if="error" :error="error" />
@@ -448,19 +490,16 @@ const totalPanier = computed(() => {
                             <div v-if="produit.price_impact !== 0" class="impact-tag">
                                 <small>
                                     (Base: {{ roundPrice(produit.price).toFixed(2) }}
-                                    {{ produit.price_impact > 0 ? '+' : '' }}{{ roundPrice(produit.price_impact).toFixed(2) }}
+                                    {{ produit.price_impact > 0 ? '+' : '' }}{{
+                                        roundPrice(produit.price_impact).toFixed(2) }}
                                     impact)
                                 </small>
                             </div>
                         </div>
                     </td>
                     <td>
-                        <input
-                            type="number"
-                            min="1"
-                            v-model.number="produit.quantity"
-                            @input="onQuantityInput(produit)"
-                        >
+                        <input type="number" min="1" v-model.number="produit.quantity"
+                            @input="onQuantityInput(produit)">
                     </td>
                     <td>
                         <button type="button" @click="removeProduct(produit)">Supprimer</button>
@@ -472,6 +511,15 @@ const totalPanier = computed(() => {
             <strong>Total panier :</strong> {{ totalPanier.toFixed(2) }} €
         </div>
 
-        <NewOrder v-if="commander"/>
+        <NewOrder v-if="commander && peutCommander" />
     </div>
 </template>
+
+<style scoped>
+.guest-info {
+    color: #a15c00;
+    background: #fff8e6;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+}
+</style>
