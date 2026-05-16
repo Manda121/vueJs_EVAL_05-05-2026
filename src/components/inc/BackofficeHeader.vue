@@ -32,6 +32,7 @@ function disconnect() {
     <header class="bo-header">
         <p>
             <strong>Backoffice</strong>
+            <RouterLink to="/back">Acceil</RouterLink>
             <RouterLink to="/customer">Clients</RouterLink>
             <RouterLink to="/back/commandes">Commandes</RouterLink>
             <RouterLink to="/reinitialisation">Reinitialisation</RouterLink>
