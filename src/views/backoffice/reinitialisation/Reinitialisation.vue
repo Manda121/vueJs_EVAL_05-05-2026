@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, provide } from 'vue';
 import DeleteCategorie from '../../../components/backoffice/categorie/DeleteCategorie.vue';
 import DeleteCommande from '../../../components/backoffice/commande/DeleteCommande.vue';
 import DeletePanier from '../../../components/backoffice/panier/DeletePanier.vue';
@@ -54,6 +54,8 @@ const Reinitialiser = async () => {
 		running.value = false;
 	}
 };
+
+provide('reinitialiserTout', Reinitialiser);
 </script>
 
 <template>

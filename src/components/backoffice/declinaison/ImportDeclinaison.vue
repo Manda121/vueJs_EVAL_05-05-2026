@@ -1,10 +1,13 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 import axios from 'axios';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 import Loading from '../../inc/Loading.vue';
 import Warning from '../../inc/Warning.vue';
 import Error from '../../inc/Error.vue';
+import { validateDeclinaisonCsv, hasResultErrors } from '@/utils/csvImportValidation';
+
+const reinitialiserTout = inject('reinitialiserTout', null);
 
 const import_csv = defineModel();
 
@@ -93,6 +96,13 @@ function findIndex(headers, names) {
 		if (idx !== -1) return idx;
 	}
 	return -1;
+}
+
+async function failImport(message) {
+	if (reinitialiserTout) {
+		await reinitialiserTout();
+	}
+	error.value = message + (reinitialiserTout ? ' Reinitialisation effectuee (tout ou rien).' : '');
 }
 
 async function readFileAsText(file) {
@@ -481,23 +491,31 @@ async function importDeclinaisons() {
 		}
 
 		const headers = rows[0];
+		const dataRows = rows.slice(1);
+
+		const validation = validateDeclinaisonCsv(headers, dataRows);
+		if (!validation.ok) {
+			await failImport(validation.message);
+			return;
+		}
+
 		const idxReference = findIndex(headers, ['reference']);
 		const idxSpec = findIndex(headers, ['specificite', 'specificité', 'specifite']);
 		const idxValue = findIndex(headers, ['karazany', 'valeur', 'value']);
 		const idxStock = findIndex(headers, ['stock_initial', 'stock']);
 		const idxPrixTtc = findIndex(headers, ['prix_vente_ttc', 'prix ttc', 'price_ttc']);
 
-		total.value = rows.length - 1;
+		total.value = dataRows.length;
 
-		for (let i = 1; i < rows.length; i++) {
-			const row = rows[i];
+		for (let i = 0; i < dataRows.length; i++) {
+			const row = dataRows[i];
 			const reference = row[idxReference] || '';
 			const specificite = row[idxSpec] || '';
 			const karazany = row[idxValue] || '';
 			const stockInitial = parseNumber(row[idxStock]) ?? 0;
 			const prixVenteTtc = parseNumber(row[idxPrixTtc]);
 
-			const rowInfo = { line: i + 1, reference, status: 'ok', message: 'OK' };
+			const rowInfo = { line: i + 2, reference, status: 'ok', message: 'OK' };
 
 			const product = await loadProductByReference(reference);
 			if (!product) {
@@ -581,12 +599,17 @@ async function importDeclinaisons() {
 			results.value.push(rowInfo);
 			done.value++;
 		}
+
+		if (hasResultErrors(results.value)) {
+			await failImport('Import declinaisons : erreurs detectees.');
+			return;
+		}
 	} catch (err) {
 		if (err && err.response) {
-			error.value = `Erreur lors de l'import. Status ${err.response.status}: ${JSON.stringify(err.response.data)}`;
+			await failImport(`Erreur lors de l'import. Status ${err.response.status}: ${JSON.stringify(err.response.data)}`);
 			console.error('importDeclinaisons error response:', err.response.status, err.response.data);
 		} else {
-			error.value = 'Erreur lors de l\'import. ' + (err && err.message ? err.message : err);
+			await failImport('Erreur lors de l\'import. ' + (err && err.message ? err.message : err));
 			console.error(err);
 		}
 	} finally {
