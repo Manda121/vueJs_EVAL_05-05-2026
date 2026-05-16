@@ -17,12 +17,7 @@ const results = ref([]);
 const total = ref(0);
 const done = ref(0);
 
-const parser = new XMLParser({
-	ignoreAttributes: false,
-	attributeNamePrefix: '@_',
-	parseTagValue: true,
-	trimValues: true
-});
+const parser = new XMLParser({});
 
 const defaultLangId = 1;
 
