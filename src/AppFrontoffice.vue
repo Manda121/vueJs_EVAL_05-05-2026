@@ -4,14 +4,7 @@ import Header from './components/inc/Header.vue';
 
 <template>
     <Header />
-    <div id="app">
+    <div id="app" class="app-shell app-shell--front">
         <router-view />
     </div>
 </template>
-
-<style>
-#app {
-    font-family: sans-serif;
-    padding: 20px;
-}
-</style>

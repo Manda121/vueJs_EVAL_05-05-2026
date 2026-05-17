@@ -178,25 +178,3 @@ onMounted(fetchCustomers);
     <NewCustomer v-if="create_customer" v-model="create_customer" />
     <ImportCustomer v-if="import_csv" v-model="import_csv" />
 </template>
-
-<style scoped>
-.flou {
-    filter: blur(5px);
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-th,
-td {
-    padding: 10px;
-    text-align: left;
-}
-
-th {
-    background-color: #f4f4f4;
-}
-</style>

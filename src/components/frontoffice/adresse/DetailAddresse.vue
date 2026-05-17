@@ -105,39 +105,3 @@ onMounted(fetchAddress);
 		<Error :error="error" v-if="error" />
 	</div>
 </template>
-
-<style scoped>
-.form-card {
-	width: min(520px, 90vw);
-	margin: 24px auto;
-	padding: 24px;
-	background: #fff;
-	border: 1px solid #e3e3e3;
-	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-	position: relative;
-}
-
-.close {
-	position: absolute;
-	top: 12px;
-	right: 12px;
-	border: 1px solid #ccc;
-	background: #fff;
-	cursor: pointer;
-}
-
-table {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-th,
-td {
-	padding: 8px 10px;
-	text-align: left;
-}
-
-th {
-	background: #f4f4f4;
-}
-</style>

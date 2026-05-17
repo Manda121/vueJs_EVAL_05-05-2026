@@ -219,26 +219,3 @@ onMounted(fetchOrders);
         </table>
     </div>
 </template>
-
-<style scoped>
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-th, td {
-    border: 1px solid #ccc;
-    padding: 8px;
-    text-align: left;
-}
-th {
-    background-color: #f2f2f2;
-}
-select {
-    padding: 4px;
-    cursor: pointer;
-}
-.status-badge {
-    font-weight: bold;
-}
-</style>

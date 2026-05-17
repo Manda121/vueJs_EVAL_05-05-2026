@@ -514,12 +514,3 @@ const totalPanier = computed(() => {
         <NewOrder v-if="commander && peutCommander" />
     </div>
 </template>
-
-<style scoped>
-.guest-info {
-    color: #a15c00;
-    background: #fff8e6;
-    padding: 0.5rem 0.75rem;
-    border-radius: 4px;
-}
-</style>

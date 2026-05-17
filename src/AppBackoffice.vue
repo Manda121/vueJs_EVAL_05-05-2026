@@ -34,14 +34,7 @@ watch(
 
 <template>
     <BackofficeHeader v-if="showHeader" />
-    <div id="app-backoffice">
+    <div id="app-backoffice" class="app-shell app-shell--back">
         <router-view />
     </div>
 </template>
-
-<style>
-#app-backoffice {
-    font-family: sans-serif;
-    padding: 20px;
-}
-</style>

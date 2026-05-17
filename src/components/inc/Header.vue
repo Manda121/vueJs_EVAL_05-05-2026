@@ -51,8 +51,8 @@ function disconnect() {
 </script>
 
 <template>
-    <header>
-        <p>
+    <header class="site-header">
+        <nav class="site-nav">
             <RouterLink to="/">Acceils</RouterLink>
             <RouterLink to="/front/produits">produits</RouterLink>
             <RouterLink to="/front/paniers">
@@ -73,25 +73,6 @@ function disconnect() {
                 <span v-if="isGuestCustomer(customer_session)" class="guest-tag">(invite)</span>
                 <button @click="disconnect">déconnecter</button>
             </template>
-        </p>
+        </nav>
     </header>
 </template>
-
-<style scoped>
-header {
-    padding: 1rem;
-    border-bottom: 1px solid #ccc;
-}
-header p {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
-button {
-    cursor: pointer;
-}
-.guest-tag {
-    font-size: 0.85em;
-    color: #666;
-}
-</style>

@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import './assets/main.css'
 import App from './App.vue'
 import router from './router/index.js' // Importe le fichier que nous venons de créer
 

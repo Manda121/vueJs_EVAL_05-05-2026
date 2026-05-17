@@ -107,25 +107,3 @@ onMounted(fetchaddresses);
     <UpdateAddresse v-if="addresse_id_upd" v-model="addresse_id_upd" />
     <NewAddresse v-if="create_addresse" v-model="create_addresse" />
 </template>
-
-<style scoped>
-.flou {
-    filter: blur(5px);
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-th,
-td {
-    padding: 10px;
-    text-align: left;
-}
-
-th {
-    background-color: #f4f4f4;
-}
-</style>

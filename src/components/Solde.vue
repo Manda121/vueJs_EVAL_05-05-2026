@@ -86,39 +86,3 @@ function doSubtract() {
     </div>
   </div>
 </template>
-
-<style scoped>
-.solde-component {
-  border: 1px solid #ccc;
-  padding: 1rem;
-  max-width: 400px;
-  margin: 0 auto;
-}
-.display {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.value {
-  font-weight: bold;
-}
-.forms {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-.modify-form {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.modify-form input {
-  padding: 0.25rem;
-  font-size: 1rem;
-}
-.modify-form button {
-  align-self: start;
-}
-</style> 

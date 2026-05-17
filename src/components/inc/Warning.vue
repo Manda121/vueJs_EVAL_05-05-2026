@@ -3,7 +3,7 @@ const props = defineProps({warning: String});
 </script>
 
 <template>
-    <div class="error">
+    <div class="warning">
         <h2>WARNING</h2>
         <p>{{ props.warning }}</p>
     </div>

@@ -30,7 +30,7 @@ function disconnect() {
 
 <template>
     <header class="bo-header">
-        <p>
+        <nav class="site-nav">
             <strong>Backoffice</strong>
             <RouterLink to="/back">Acceil</RouterLink>
             <RouterLink to="/customer">Clients</RouterLink>
@@ -42,24 +42,6 @@ function disconnect() {
                 <span>{{ user_session.firstname }} {{ user_session.lastname }}</span>
                 <button type="button" @click="disconnect">Deconnecter</button>
             </template>
-        </p>
+        </nav>
     </header>
 </template>
-
-<style scoped>
-.bo-header {
-    padding: 1rem;
-    border-bottom: 1px solid #ccc;
-    background: #f5f5f5;
-}
-.bo-header p {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin: 0;
-}
-button {
-    cursor: pointer;
-}
-</style>

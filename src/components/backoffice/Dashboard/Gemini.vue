@@ -156,31 +156,3 @@ onMounted(fetchOrders);
         </table>
     </div>
 </template>
-
-<style scoped>
-/* Strict minimum requis pour structurer visuellement les blocs du Dashboard */
-.kpi-container {
-    display: flex;
-    gap: 20px;
-    margin: 20px 0;
-}
-.kpi-card {
-    border: 1px solid #ccc;
-    padding: 15px;
-    border-radius: 4px;
-    text-align: center;
-    width: 200px;
-}
-.dashboard-controls {
-    margin-bottom: 20px;
-}
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-}
-</style>
