@@ -15,6 +15,7 @@ import NewOrderFO from '../views/frontoffice/commandes/NewOrder.vue'
 import ListeOrderFO from '@/views/frontoffice/orders/ListeOrder.vue'
 import ListeOrderBO from '@/views/backoffice/order/ListeOrder.vue'
 import Dashboard from '@/views/backoffice/Dashoboard/Dashboard.vue'
+import ListeStock from '@/views/backoffice/stock/ListeStock.vue'
 
 const routes = [
   {
@@ -31,6 +32,11 @@ const routes = [
     path: '/back/commandes',
     name: 'liste_commandes',
     component: ListeOrderBO
+  },
+  {
+    path: '/back/stocks',
+    name: 'liste_stocks',
+    component: ListeStock
   },
   {
     path: '/home/:id',

@@ -35,6 +35,7 @@ function disconnect() {
             <RouterLink to="/back">Acceil</RouterLink>
             <RouterLink to="/customer">Clients</RouterLink>
             <RouterLink to="/back/commandes">Commandes</RouterLink>
+            <RouterLink to="/back/stocks">Stocks</RouterLink>
             <RouterLink to="/reinitialisation">Reinitialisation</RouterLink>
 
             <template v-if="user_session">
