@@ -244,9 +244,3 @@ onMounted(async () => {
         </div>
     </div>
 </template>
-
-<style scoped>
-img {
-    width: 5%;
-}
-</style>

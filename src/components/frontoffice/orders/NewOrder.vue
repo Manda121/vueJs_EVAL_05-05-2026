@@ -734,12 +734,3 @@ watch(selectedAddressId, async (newId, oldId) => {
     <UpdateAddresse v-if="updateAddressId" v-model="updateAddressId" />
     <NewAddresse v-if="showNewAddress && addresses.length" v-model="showNewAddress" />
 </template>
-
-<style scoped>
-.guest-info {
-    color: #a15c00;
-    background: #fff8e6;
-    padding: 0.5rem 0.75rem;
-    border-radius: 4px;
-}
-</style>

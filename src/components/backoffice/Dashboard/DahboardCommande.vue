@@ -178,7 +178,3 @@ onMounted(fetchOrders);
         </div>
     </div>
 </template>
-
-<style scoped>
-/* Aucun CSS ajouté, conservation de tes balises et classes */
-</style>

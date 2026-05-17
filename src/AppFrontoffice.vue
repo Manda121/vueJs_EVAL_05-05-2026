@@ -8,10 +8,3 @@ import Header from './components/inc/Header.vue';
         <router-view />
     </div>
 </template>
-
-<style>
-#app {
-    font-family: sans-serif;
-    padding: 20px;
-}
-</style>

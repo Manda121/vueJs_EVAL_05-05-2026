@@ -45,21 +45,3 @@ function disconnect() {
         </p>
     </header>
 </template>
-
-<style scoped>
-.bo-header {
-    padding: 1rem;
-    border-bottom: 1px solid #ccc;
-    background: #f5f5f5;
-}
-.bo-header p {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin: 0;
-}
-button {
-    cursor: pointer;
-}
-</style>

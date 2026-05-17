@@ -102,35 +102,3 @@ onMounted(() => {
         </div>
     </div>
 </template>
-
-<style scoped>
-.liste-stocks-container {
-    padding: 20px;
-    background-color: #f5f5f5;
-    border-radius: 8px;
-}
-
-.info-etat {
-    padding: 10px;
-    background: #e1f5fe;
-    color: #0288d1;
-    border-radius: 4px;
-}
-
-.grille-stocks {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.carte-produit-stock {
-    background-color: #ffffff;
-    border-left: 5px solid #2196f3;
-    border-radius: 0 8px 8px 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.error-msg { color: red; padding: 10px; }
-.warning-msg { color: orange; padding: 10px; }
-</style>

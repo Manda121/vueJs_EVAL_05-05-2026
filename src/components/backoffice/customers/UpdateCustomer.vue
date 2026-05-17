@@ -179,25 +179,3 @@ onMounted(fetchCustomer);
         <Error :error="error" v-if="error" />
     </div>
 </template>
-
-<style scoped>
-.popop {
-    position: fixed;
-    width: 400px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    padding: 20px;
-    border: 1px solid #ccc;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    z-index: 1000;
-}
-
-.group-list {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    margin: 10px 0;
-}
-</style>

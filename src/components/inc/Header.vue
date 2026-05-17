@@ -76,22 +76,3 @@ function disconnect() {
         </p>
     </header>
 </template>
-
-<style scoped>
-header {
-    padding: 1rem;
-    border-bottom: 1px solid #ccc;
-}
-header p {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
-button {
-    cursor: pointer;
-}
-.guest-tag {
-    font-size: 0.85em;
-    color: #666;
-}
-</style>

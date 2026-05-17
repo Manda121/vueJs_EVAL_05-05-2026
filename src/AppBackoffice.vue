@@ -38,10 +38,3 @@ watch(
         <router-view />
     </div>
 </template>
-
-<style>
-#app-backoffice {
-    font-family: sans-serif;
-    padding: 20px;
-}
-</style>
