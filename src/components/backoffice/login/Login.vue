@@ -69,7 +69,7 @@ const Login = async () => {
 </script>
 
 <template>
-    <div>
+    <div class="login-page">
         <Loading v-if="loading" message="Connexion..." />
         <Error :error="error" v-if="error" />
         <input type="email" name="email" v-model="email" placeholder="email"><br>
