@@ -17,6 +17,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // TU AJOUTES CETTE RÈGLE ICI :
+      '/module': {
+        target: 'http://localhost/prestashop_edition_classic_version_8.2.6',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   resolve: {

@@ -15,17 +15,21 @@ const error = ref(null);
 const warning = ref(null);
 
 const produit = ref(null);
-const stocks = ref([]); 
+const stocks = ref([]);
 
 const parser = new XMLParser({});
 const builder = new XMLBuilder({ format: true });
 
+// Instance pour l'API PrestaShop Native (Lecture des données)
 const api = axios.create({
     baseURL: '/api',
     headers: {
         'Authorization': 'Basic ' + btoa('4XZXKK1Y8MMXSCYUMHJZ8J26JUY4W8TB' + ':')
     }
 });
+
+// TOKEN généré depuis ta base de données pour ton module sur-mesure
+const MODULE_TOKEN = '49d9540686722ab0727706178d87d787a30d1fac2dea22217bbb2293d3f35e6c';
 
 const normalizeToArray = (value) => {
     if (!value) return [];
@@ -116,7 +120,7 @@ const fetchStockData = async () => {
                         id_product_attribute: idCombo,
                         details: attributes,
                         quantity: parseInt(stockComplet.quantity || 0, 10),
-                        quantiteAAjouter: 0, // Nouveau champ : commence à 0 pour l'utilisateur
+                        quantiteAAjouter: 0,
                         stockOriginal: stockComplet
                     });
                 }
@@ -141,7 +145,7 @@ const fetchStockData = async () => {
                     id_product_attribute: "0",
                     details: [],
                     quantity: parseInt(stockComplet.quantity || 0, 10),
-                    quantiteAAjouter: 0, // Nouveau champ : commence à 0 pour l'utilisateur
+                    quantiteAAjouter: 0,
                     stockOriginal: stockComplet
                 });
             }
@@ -154,50 +158,79 @@ const fetchStockData = async () => {
     }
 };
 
-// Fonction pour appliquer l'augmentation ou la diminution
+// Nouvelle fonction pour appliquer la variation via ton module stockadjuster
 const appliquerAjustement = async (stockItem) => {
-    // 1. On calcule le nouveau total absolu (Exemple: 10 actuel + 2 écrit dans le champ = 12)
-    const nouveauTotal = stockItem.quantity + stockItem.quantiteAAjouter;
+    // Si l'utilisateur clique sans rien écrire, on s'arrête
+    if (stockItem.quantiteAAjouter === 0) {
+        return;
+    }
 
-    // Sécurité élémentaire : on évite de tomber sous 0 unité en stock
-    if (nouveauTotal < 0) {
+    const nouveauTotalAperçu = stockItem.quantity + stockItem.quantiteAAjouter;
+
+    if (nouveauTotalAperçu < 0) {
         alert("Le stock final ne peut pas être négatif !");
         return;
     }
 
     try {
-        // 2. Préparation du modèle XML avec le nouveau total calculé
-        const stockModifier = {
-            prestashop: {
-                stock_available: {
-                    id: stockItem.id_stock_available,
-                    id_product: props.productId,
-                    id_product_attribute: stockItem.id_product_attribute,
-                    id_shop: stockItem.stockOriginal.id_shop,
-                    id_shop_group: stockItem.stockOriginal.id_shop_group || 0,
-                    quantity: nouveauTotal, // On envoie le résultat final
-                    depends_on_stock: stockItem.stockOriginal.depends_on_stock,
-                    out_of_stock: stockItem.stockOriginal.out_of_stock
-                }
+        // 1. On prépare la structure XML attendue par le parseur de ton module PHP
+        const xmlPayloadObj = {
+            stock_adjustment: {
+                id_product: props.productId,
+                id_product_attribute: stockItem.id_product_attribute,
+                delta: stockItem.quantiteAAjouter, // Ici on passe la variation (+5, -2, etc.)
+                id_shop: stockItem.stockOriginal.id_shop || 1,
+                reason: 2 // Motif par défaut (Ex: Correction d'inventaire)
             }
         };
 
-        // 3. Transformation en texte XML
-        const xmlData = builder.build(stockModifier);
+        // 2. Conversion de l'objet en chaîne de caractères XML
+        const xmlData = builder.build(xmlPayloadObj);
 
-        // 4. Envoi de la mise à jour à PrestaShop via PUT
-        await api.put(`/stock_availables/${stockItem.id_stock_available}`, xmlData, {
-            headers: { 'Content-Type': 'application/xml' }
-        });
+        // 3. Appel de l'endpoint du module via ton Proxy
+        // Grâce au proxy, l'appel cible l'adresse de ton contrôleur PHP
+        const response = await axios.post(
+            '/module/stockadjuster/adjust',
+            xmlData,
+            {
+                headers: {
+                    'Content-Type': 'application/xml; charset=utf-8',
+                    'X-API-TOKEN': MODULE_TOKEN // Injection de ton token de base de données
+                }
+            }
+        );
 
-        // 5. Mise à jour de l'affichage local si l'API a accepté le changement
-        stockItem.quantity = nouveauTotal;
-        stockItem.quantiteAAjouter = 0; // On remet le champ de saisie à 0 après validation
-        alert("Stock mis à jour avec succès !");
+        // 4. Lecture de la réponse XML renvoyée par ton module
+        const parsedResponse = parser.parse(response.data);
+        const resultXml = parsedResponse?.prestashop?.stock_adjustment;
+
+        // MODIFICATION ICI : On vérifie si c'est égal à true (booléen) OU à 'true' (chaîne)
+        if (resultXml && (resultXml.success === true || resultXml.success === 'true')) {
+
+            // On récupère la valeur mise à jour calculée et renvoyée par le serveur
+            stockItem.quantity = parseInt(resultXml.quantity_after, 10);
+            stockItem.quantiteAAjouter = 0; // Remise à zéro du champ input
+            alert("Le stock a été ajusté et tracé avec succès !");
+
+        } else {
+            alert("Erreur lors de l'ajustement du stock.");
+        }
 
     } catch (err) {
-        console.error("Erreur lors de la modification du stock :", err);
-        alert("Impossible de modifier le stock via l'API.");
+        console.error("Erreur module stockadjuster :", err);
+
+        // Tentative de lecture de l'erreur au format XML si renvoyée par le serveur
+        if (err.response && err.response.data) {
+            try {
+                const parsedErr = parser.parse(err.response.data);
+                const errorMsg = parsedErr?.prestashop?.errors?.error?.message;
+                if (errorMsg) {
+                    alert(`Erreur : ${errorMsg}`);
+                    return;
+                }
+            } catch (pErr) { }
+        }
+        alert("Impossible de modifier le stock via le module.");
     }
 };
 
@@ -246,12 +279,8 @@ onMounted(() => {
                             </span>
                         </td>
                         <td>
-                            <input 
-                                type="number" 
-                                v-model.number="stock.quantiteAAjouter" 
-                                class="input-stock"
-                                placeholder="0"
-                            />
+                            <input type="number" v-model.number="stock.quantiteAAjouter" class="input-stock"
+                                placeholder="0" />
                         </td>
                         <td>
                             <span class="txt-bleu">
@@ -259,11 +288,7 @@ onMounted(() => {
                             </span>
                         </td>
                         <td>
-                            <button 
-                                type="button" 
-                                @click="appliquerAjustement(stock)"
-                                class="btn-modifier"
-                            >
+                            <button type="button" @click="appliquerAjustement(stock)" class="btn-modifier">
                                 Valider
                             </button>
                         </td>
@@ -275,6 +300,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* Tes styles CSS restent inchangés */
 .stock-container {
     margin-top: 20px;
     padding: 15px;
@@ -282,23 +308,29 @@ onMounted(() => {
     border-radius: 8px;
     background-color: #fff;
 }
+
 .reference {
     color: #666;
     font-size: 0.9rem;
 }
+
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 15px;
 }
-th, td {
+
+th,
+td {
     border: 1px solid #eee;
     padding: 10px;
     text-align: left;
 }
+
 th {
     background-color: #f9f9f9;
 }
+
 .input-stock {
     width: 80px;
     padding: 5px;
@@ -306,6 +338,7 @@ th {
     border-radius: 4px;
     text-align: center;
 }
+
 .btn-modifier {
     background-color: #2196f3;
     color: white;
@@ -315,12 +348,29 @@ th {
     cursor: pointer;
     font-weight: bold;
 }
+
 .btn-modifier:hover {
     background-color: #0b7dda;
 }
-.txt-vert { color: #137333; }
-.txt-rouge { color: #c5221f; }
-.txt-bleu { color: #0288d1; font-weight: bold; }
-.error-msg { color: red; }
-.warning-msg { color: orange; }
+
+.txt-vert {
+    color: #137333;
+}
+
+.txt-rouge {
+    color: #c5221f;
+}
+
+.txt-bleu {
+    color: #0288d1;
+    font-weight: bold;
+}
+
+.error-msg {
+    color: red;
+}
+
+.warning-msg {
+    color: orange;
+}
 </style>
