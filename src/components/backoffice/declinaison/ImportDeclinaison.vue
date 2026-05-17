@@ -454,13 +454,14 @@ async function markProductAsHavingCombinations(productId, defaultComboId) {
 				id_category_default: product.id_category_default,
 				id_tax_rules_group: product.id_tax_rules_group,
 				active: product.active,
-				name: product.name,
+				name: product.name.language,
 				link_rewrite: product.link_rewrite,
 				cache_default_attribute: defaultComboId,
 				id_default_combination: defaultComboId
 			}
 		}
 	};
+	console.log(updateData.prestashop.product);
 	const xml = `<?xml version="1.0" encoding="UTF-8"?>\n${builder.build(updateData)}`;
 
 	await api.put(`/products/${productId}`, xml, {
