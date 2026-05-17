@@ -1,9 +1,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import { XMLParser } from 'fast-xml-parser';
+import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 
-// Déclaration des props pour recevoir l'ID du produit depuis un composant parent
 const props = defineProps({
     productId: {
         type: [String, Number],
@@ -16,11 +15,11 @@ const error = ref(null);
 const warning = ref(null);
 
 const produit = ref(null);
-const stocks = ref([]); // Stockera la liste des stocks (Simple ou Déclinaisons)
+const stocks = ref([]); 
 
 const parser = new XMLParser({});
+const builder = new XMLBuilder({ format: true });
 
-// Configuration de l'API (identique à votre méthode)
 const api = axios.create({
     baseURL: '/api',
     headers: {
@@ -28,61 +27,51 @@ const api = axios.create({
     }
 });
 
-// Vos fonctions utilitaires pour sécuriser les tableaux
 const normalizeToArray = (value) => {
     if (!value) return [];
     return Array.isArray(value) ? value : [value];
 };
 
-// Fonction pour récupérer la quantité en stock via l'ID Stock Available
-const getStockQuantity = async (idStockAvailable) => {
-    if (!idStockAvailable) return 0;
+// Récupérer les détails complets d'un stock physique depuis l'API
+const getStockDetails = async (idStockAvailable) => {
+    if (!idStockAvailable) return null;
     try {
         const res = await api.get(`/stock_availables/${idStockAvailable}`);
-        const stockData = parser.parse(res.data)?.prestashop?.stock_available;
-        return parseInt(stockData?.quantity || 0, 10);
+        return parser.parse(res.data)?.prestashop?.stock_available;
     } catch (err) {
-        console.error("Erreur récupération quantité stock:", err);
-        return 0;
+        console.error("Erreur récupération stock:", err);
+        return null;
     }
 };
 
-// Fonction pour récupérer les attributs d'une déclinaison (ex: Taille - XL, Couleur - Rouge)
+// Récupérer les noms des attributs (Couleur, Taille...)
 const getComboDetails = async (idProductAttribute) => {
     if (!idProductAttribute || idProductAttribute === "0") return [];
-
     try {
         const resCombo = await api.get(`/combinations/${idProductAttribute}`);
         const combo = parser.parse(resCombo.data)?.prestashop?.combination;
-
         const values = normalizeToArray(combo?.associations?.product_option_values?.product_option_value);
         let details = [];
 
         for (const v of values) {
-            // 1. Valeur (ex: "Bleu")
             const resVal = await api.get(`/product_option_values/${v.id}`);
             const valData = parser.parse(resVal.data)?.prestashop?.product_option_value;
             const valName = Array.isArray(valData.name.language) ? valData.name.language[0] : valData.name.language;
 
-            // 2. Option Parente (ex: "Couleur")
             const idGroup = valData.id_attribute_group;
             const resOpt = await api.get(`/product_options/${idGroup}`);
             const optData = parser.parse(resOpt.data)?.prestashop?.product_option;
             const optName = Array.isArray(optData.name.language) ? optData.name.language[0] : optData.name.language;
 
-            details.push({
-                option: optName,
-                valeur: valName
-            });
+            details.push({ option: optName, valeur: valName });
         }
         return details;
     } catch (err) {
-        console.error("Erreur détails combo:", err);
         return [];
     }
 };
 
-// Fonction principale de chargement des données
+// Fonction principale de chargement
 const fetchStockData = async () => {
     loading.value = true;
     error.value = null;
@@ -91,7 +80,6 @@ const fetchStockData = async () => {
     produit.value = null;
 
     try {
-        // 1. Récupérer les informations de base du produit
         const resProd = await api.get(`/products/${props.productId}`, {
             params: { 'display': 'full' }
         });
@@ -103,17 +91,11 @@ const fetchStockData = async () => {
         }
 
         produit.value = prodData;
-
-        // 2. Vérifier si le produit a des déclinaisons
         const combinations = normalizeToArray(prodData?.associations?.combinations?.combination);
 
         if (combinations.length > 0) {
-            // --- CAS PRODUIT AVEC DECLINAISONS ---
             for (const combo of combinations) {
                 const idCombo = combo.id;
-
-                // Trouver le stock associé à cette déclinaison spécifique
-                // PrestaShop expose un filtre par id_product et id_product_attribute
                 const resStockLink = await api.get('/stock_availables', {
                     params: {
                         'filter[id_product]': `[${props.productId}]`,
@@ -125,18 +107,21 @@ const fetchStockData = async () => {
                 const stockLinkRoot = parser.parse(resStockLink.data)?.prestashop?.stock_availables;
                 const stockLink = normalizeToArray(stockLinkRoot?.stock_available)[0];
 
-                const qty = await getStockQuantity(stockLink?.id);
+                const stockComplet = await getStockDetails(stockLink?.id);
                 const attributes = await getComboDetails(idCombo);
 
-                stocks.value.push({
-                    id_product_attribute: idCombo,
-                    details: attributes,
-                    quantity: qty
-                });
+                if (stockComplet) {
+                    stocks.value.push({
+                        id_stock_available: stockComplet.id,
+                        id_product_attribute: idCombo,
+                        details: attributes,
+                        quantity: parseInt(stockComplet.quantity || 0, 10),
+                        quantiteAAjouter: 0, // Nouveau champ : commence à 0 pour l'utilisateur
+                        stockOriginal: stockComplet
+                    });
+                }
             }
         } else {
-            // --- CAS PRODUIT SIMPLE (SANS DECLINAISON) ---
-            // On cherche le stock où id_product_attribute vaut 0
             const resStockLink = await api.get('/stock_availables', {
                 params: {
                     'filter[id_product]': `[${props.productId}]`,
@@ -148,24 +133,74 @@ const fetchStockData = async () => {
             const stockLinkRoot = parser.parse(resStockLink.data)?.prestashop?.stock_availables;
             const stockLink = normalizeToArray(stockLinkRoot?.stock_available)[0];
 
-            const qty = await getStockQuantity(stockLink?.id);
+            const stockComplet = await getStockDetails(stockLink?.id);
 
-            stocks.value.push({
-                id_product_attribute: "0",
-                details: [],
-                quantity: qty
-            });
+            if (stockComplet) {
+                stocks.value.push({
+                    id_stock_available: stockComplet.id,
+                    id_product_attribute: "0",
+                    details: [],
+                    quantity: parseInt(stockComplet.quantity || 0, 10),
+                    quantiteAAjouter: 0, // Nouveau champ : commence à 0 pour l'utilisateur
+                    stockOriginal: stockComplet
+                });
+            }
         }
 
     } catch (err) {
-        error.value = "Erreur lors de la récupération des informations de stock.";
-        console.error("Détails stock:", err);
+        error.value = "Erreur lors de la récupération du stock.";
     } finally {
         loading.value = false;
     }
 };
 
-// Charger les données au montage du composant
+// Fonction pour appliquer l'augmentation ou la diminution
+const appliquerAjustement = async (stockItem) => {
+    // 1. On calcule le nouveau total absolu (Exemple: 10 actuel + 2 écrit dans le champ = 12)
+    const nouveauTotal = stockItem.quantity + stockItem.quantiteAAjouter;
+
+    // Sécurité élémentaire : on évite de tomber sous 0 unité en stock
+    if (nouveauTotal < 0) {
+        alert("Le stock final ne peut pas être négatif !");
+        return;
+    }
+
+    try {
+        // 2. Préparation du modèle XML avec le nouveau total calculé
+        const stockModifier = {
+            prestashop: {
+                stock_available: {
+                    id: stockItem.id_stock_available,
+                    id_product: props.productId,
+                    id_product_attribute: stockItem.id_product_attribute,
+                    id_shop: stockItem.stockOriginal.id_shop,
+                    id_shop_group: stockItem.stockOriginal.id_shop_group || 0,
+                    quantity: nouveauTotal, // On envoie le résultat final
+                    depends_on_stock: stockItem.stockOriginal.depends_on_stock,
+                    out_of_stock: stockItem.stockOriginal.out_of_stock
+                }
+            }
+        };
+
+        // 3. Transformation en texte XML
+        const xmlData = builder.build(stockModifier);
+
+        // 4. Envoi de la mise à jour à PrestaShop via PUT
+        await api.put(`/stock_availables/${stockItem.id_stock_available}`, xmlData, {
+            headers: { 'Content-Type': 'application/xml' }
+        });
+
+        // 5. Mise à jour de l'affichage local si l'API a accepté le changement
+        stockItem.quantity = nouveauTotal;
+        stockItem.quantiteAAjouter = 0; // On remet le champ de saisie à 0 après validation
+        alert("Stock mis à jour avec succès !");
+
+    } catch (err) {
+        console.error("Erreur lors de la modification du stock :", err);
+        alert("Impossible de modifier le stock via l'API.");
+    }
+};
+
 onMounted(() => {
     if (props.productId) {
         fetchStockData();
@@ -175,43 +210,62 @@ onMounted(() => {
 
 <template>
     <div class="stock-container">
-        <div v-if="loading">Chargement des informations de stock...</div>
+        <div v-if="loading">Chargement...</div>
         <div v-if="error" class="error-msg">{{ error }}</div>
         <div v-if="warning" class="warning-msg">{{ warning }}</div>
 
         <div v-if="!loading && !error && produit">
             <h3>
-                Stock pour : 
                 {{ Array.isArray(produit.name?.language) ? produit.name.language[0] : produit.name?.language }}
             </h3>
-            <p class="reference">Référence de base : {{ produit.reference }}</p>
+            <p class="reference">Référence : {{ produit.reference }}</p>
 
             <table>
                 <thead>
                     <tr>
-                        <th>Déclinaison / Variante</th>
-                        <th>Quantité disponible</th>
-                        <th>Statut</th>
+                        <th>Variante</th>
+                        <th>Stock Actuel</th>
+                        <th>Quantité à ajouter / enlever</th>
+                        <th>Aperçu final</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="stock in stocks" :key="stock.id_product_attribute">
                         <td>
                             <span v-if="stock.id_product_attribute === '0'">Produit Standard</span>
-                            
                             <div v-else>
-                                <small class="combo-id">ID Variante: {{ stock.id_product_attribute }}</small>
                                 <div v-for="(item, index) in stock.details" :key="index">
                                     <strong>{{ item.option }} :</strong> {{ item.valeur }}
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <strong>{{ stock.quantity }}</strong> unités
+                            <span :class="stock.quantity > 0 ? 'txt-vert' : 'txt-rouge'">
+                                <strong>{{ stock.quantity }}</strong> unités
+                            </span>
                         </td>
                         <td>
-                            <span v-if="stock.quantity > 0" class="badge InStock">En Stock</span>
-                            <span v-else class="badge OutOfStock">Rupture</span>
+                            <input 
+                                type="number" 
+                                v-model.number="stock.quantiteAAjouter" 
+                                class="input-stock"
+                                placeholder="0"
+                            />
+                        </td>
+                        <td>
+                            <span class="txt-bleu">
+                                {{ stock.quantity + stock.quantiteAAjouter }} u.
+                            </span>
+                        </td>
+                        <td>
+                            <button 
+                                type="button" 
+                                @click="appliquerAjustement(stock)"
+                                class="btn-modifier"
+                            >
+                                Valider
+                            </button>
                         </td>
                     </tr>
                 </tbody>
@@ -230,7 +284,6 @@ onMounted(() => {
 }
 .reference {
     color: #666;
-    font-style: italic;
     font-size: 0.9rem;
 }
 table {
@@ -246,24 +299,28 @@ th, td {
 th {
     background-color: #f9f9f9;
 }
-.combo-id {
-    color: #888;
-    display: block;
-}
-.badge {
-    padding: 4px 8px;
+.input-stock {
+    width: 80px;
+    padding: 5px;
+    border: 1px solid #ccc;
     border-radius: 4px;
-    font-size: 0.8rem;
+    text-align: center;
+}
+.btn-modifier {
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
     font-weight: bold;
 }
-.InStock {
-    background-color: #e6f4ea;
-    color: #137333;
+.btn-modifier:hover {
+    background-color: #0b7dda;
 }
-.OutOfStock {
-    background-color: #fce8e6;
-    color: #c5221f;
-}
+.txt-vert { color: #137333; }
+.txt-rouge { color: #c5221f; }
+.txt-bleu { color: #0288d1; font-weight: bold; }
 .error-msg { color: red; }
 .warning-msg { color: orange; }
 </style>
