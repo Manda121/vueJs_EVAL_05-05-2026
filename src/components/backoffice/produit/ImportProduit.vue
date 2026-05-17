@@ -35,7 +35,7 @@ const parser = new XMLParser({
 
 const defaultLangId = 1;
 const defaultParentCategoryId = 2;
-const defaultCountryId = 133;
+const defaultCountryId = 8;
 
 const taxGroupCache = ref({});
 const taxRateCache = ref({});

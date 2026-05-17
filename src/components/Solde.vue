@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 
 // état local
 const balance = ref(110);
-const currency = ref('Ariary');
+const currency = ref('Euro');
 const hidden = ref(false);
 
 // formulaire de modification

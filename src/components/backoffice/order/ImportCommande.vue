@@ -34,11 +34,11 @@ const parser = new XMLParser({
 });
 
 const defaultLangId = 1;
-const defaultCurrencyId = 1;
+const defaultCurrencyId = 2;
 const defaultCarrierId = 1;
 const defaultShopId = 1;
 const defaultShopGroupId = 1;
-const defaultCountryId = 133;
+const defaultCountryId = 8;
 const defaultCustomerGroupId = 3;
 const defaultCity = 'Antananarivo';
 const defaultPostcode = '00000';

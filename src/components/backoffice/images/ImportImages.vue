@@ -131,8 +131,7 @@ const importImages = async () => {
 </script>
 
 <template>
-    <div class="popop">
-        <button @click="import_zip = false">X</button>
+    <div>
         <h1>Importer des images</h1>
 
         <input ref="fileRef" type="file" name="zip_file" id="zip_file" accept=".zip">

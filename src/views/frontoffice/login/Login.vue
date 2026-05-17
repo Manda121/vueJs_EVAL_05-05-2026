@@ -7,6 +7,11 @@
 
     const showLogin = ref(true);
 
+    function anonymous() {
+        localStorage.removeItem('customer_session');
+        window.location.href = '/front/produits';
+    }
+
 </script>
 
 <template>
@@ -14,7 +19,7 @@
         Login
         <Login v-if="showLogin"/>
         <Singin v-else/>
-        <a href="/front/produits">anonyme</a>
+        <button @click="anonymous">anonyme</button>
     </div>
     <button @click="showLogin = false" v-if="showLogin">s inscrire</button>
     <button @click="showLogin = true" v-else>se connecter</button>

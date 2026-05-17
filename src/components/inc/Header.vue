@@ -43,7 +43,7 @@ onUnmounted(() => {
 })
 
 function disconnect() {
-    localStorage.removeItem('user_session')
+    // localStorage.removeItem('user_session')
     removeCustomerSession()
     customer_session.value = null
     panier_session.value = getStoredCart()

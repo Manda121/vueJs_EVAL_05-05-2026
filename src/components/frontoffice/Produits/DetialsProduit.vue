@@ -19,6 +19,9 @@ const warning = ref(null);
 const error = ref(null);
 const success = ref(null);
 
+// Variable pour stocker la quantité restante en stock
+const quantityInStock = ref(0);
+
 const id_product = defineModel();
 
 const optionGroups = ref([]);
@@ -70,7 +73,7 @@ const buildCartContext = async () => {
 
     return {
         idCustomer,
-        idCurrency: '1',
+        idCurrency: '2',
         idLang: '1',
         idShop: '1',
         idShopGroup: '1',
@@ -108,6 +111,32 @@ const roundPrice = (value) => {
     return Math.round(parseNumber(value));
 };
 
+// Récupération de la quantité globale en stock depuis stock_availables
+const fetchProductStock = async (productId) => {
+    try {
+        const response = await api.get('/stock_availables', {
+            params: {
+                display: 'full',
+                'filter[id_product]': productId,
+                'filter[id_product_attribute]': '0' // 0 correspond à la quantité globale du produit de base
+            }
+        });
+        const jsonObj = parser.parse(response.data);
+        const stockData = jsonObj?.prestashop?.stock_availables?.stock_available;
+        
+        if (stockData) {
+            // fast-xml-parser peut renvoyer un tableau ou un objet direct si unique
+            const stockItem = Array.isArray(stockData) ? stockData[0] : stockData;
+            quantityInStock.value = parseInt(stockItem.quantity || 0, 10);
+        } else {
+            quantityInStock.value = 0;
+        }
+    } catch (err) {
+        console.error('Erreur lors du chargement du stock:', err);
+        quantityInStock.value = 0;
+    }
+};
+
 const fetchOptionGroups = async (groupIds) => {
     if (groupIds.length === 0) {
         return {};
@@ -115,26 +144,20 @@ const fetchOptionGroups = async (groupIds) => {
 
     try {
         const resultats = {};
-
-        // On boucle sur chaque ID de groupe
         for (const id of groupIds) {
-            // On attend que la requête finisse avant de passer à l'ID suivant
             const response = await api.get('/product_options/' + id, { 
                 params: { display: 'full' } 
             });
 
-            // On analyse les données reçues
             const data = parser.parse(response.data);
             const option = data.prestashop.product_option;
 
             if (option) {
                 const nom = pickLangValue(option.name);
                 const idOption = option.id;
-                // On stocke dans notre objet : { "1": "Couleur" }
                 resultats[idOption] = nom;
             }
         }
-
         return resultats;
     } catch (err) {
         console.error('Erreur lors du chargement des noms de groupes:', err);
@@ -150,8 +173,6 @@ const fetchOptionValues = async (ids) => {
 
     try {
         const toutesLesValeurs = [];
-
-        // Étape 1 : Récupérer chaque valeur une par une
         for (const id of ids) {
             const response = await api.get('/product_option_values/' + id, { 
                 params: { display: 'full' } 
@@ -161,18 +182,15 @@ const fetchOptionValues = async (ids) => {
             const valueData = data.prestashop.product_option_value;
 
             if (valueData) {
-                // On crée un petit objet simple
                 const objetValeur = {
                     id: valueData.id,
                     name: pickLangValue(valueData.name),
                     groupId: valueData.id_attribute_group
                 };
-                // On l'ajoute à notre liste
                 toutesLesValeurs.push(objetValeur);
             }
         }
 
-        // Étape 2 : Trouver les IDs de groupes uniques (sans doublons)
         const groupIdsUniques = [];
         for (const v of toutesLesValeurs) {
             if (groupIdsUniques.includes(v.groupId) === false) {
@@ -180,13 +198,10 @@ const fetchOptionValues = async (ids) => {
             }
         }
 
-        // Étape 3 : Récupérer les noms des groupes
         const nomsDesGroupes = await fetchOptionGroups(groupIdsUniques);
 
-        // Étape 4 : Organiser les données pour l'affichage (le v-for)
         const structureFinale = [];
         for (const gId of groupIdsUniques) {
-            // On filtre les valeurs qui appartiennent à ce groupe
             const valeursDuGroupe = [];
             for (const v of toutesLesValeurs) {
                 if (v.groupId === gId) {
@@ -203,7 +218,6 @@ const fetchOptionValues = async (ids) => {
 
         optionGroups.value = structureFinale;
 
-        // Initialiser les menus déroulants
         for (const group of optionGroups.value) {
             if (!selectedOptionValueIds.value[group.id]) {
                 selectedOptionValueIds.value[group.id] = '';
@@ -227,12 +241,9 @@ const fetchproduct = async () => {
             params: { 'display': 'full' }
         });
         
-        // Conversion XML -> JSON
         const jsonObj = parser.parse(response.data);
-
         console.log("Données parsées JSON:", jsonObj);
 
-        // Accès aux données selon la structure PrestaShop : <prestashop><products><product>
         const data = jsonObj?.prestashop?.product;
 
         if (!data) {
@@ -240,9 +251,10 @@ const fetchproduct = async () => {
             return;
         }
 
-        // Si l'API renvoie un seul client, fast-xml-parser peut renvoyer un objet au lieu d'un tableau.
-        // On force le format tableau pour le v-for du template.
         product.value = data;
+
+        // Appel parallèle ou séquentiel pour charger la quantité en stock
+        await fetchProductStock(data.id);
 
         const optionValueNodes = normalizeToArray(
             data?.associations?.product_option_values?.product_option_value
@@ -290,7 +302,7 @@ const buildCartXml = ({
     <id_lang>${context.idLang}</id_lang>
     <id_shop_group>${context.idShopGroup}</id_shop_group>
     <id_shop>${context.idShop}</id_shop>
-        <secure_key>${context.secureKey || ''}</secure_key>
+    <secure_key>${context.secureKey || ''}</secure_key>
     <associations>
       <cart_rows>
 ${cartRowsXml}
@@ -485,6 +497,10 @@ const addToCart = async () => {
         }
 
         success.value = 'Produit ajoute au panier.';
+        
+        // Rafraîchir la valeur du stock localement après un ajout réussi si nécessaire
+        await fetchProductStock(product.value.id);
+
     } catch (err) {
         error.value = 'Erreur lors de l\'ajout au panier.';
         console.error('Détails:', err);
@@ -495,18 +511,33 @@ onMounted(fetchproduct);
 </script>
 
 <template>
-    <div>
-
+    <div class="product-details-container">
         <h2>Details du produit</h2>
         <button @click="$router.push('/front/paniers')">voir le panier</button>
 
         <Loading v-if="loading" message="Chargement du produit..." />
 
-        <div v-else-if="product">
+        <div v-else-if="product" class="product-content">
+            <div class="product-image-wrapper" v-if="product.id_default_image">
+                <img 
+                    :src="`http://localhost/prestashop_edition_classic_version_8.2.6/api/images/products/${product.id}/${product.id_default_image}?ws_key=4XZXKK1Y8MMXSCYUMHJZ8J26JUY4W8TB`" 
+                    alt="Image du produit"
+                    class="product-img"
+                />
+            </div>
+
             <h3>{{ pickLangValue(product.name) }}</h3>
 
-            <p><strong>Prix:</strong> {{ roundPrice(product.price).toFixed(2) }}</p>
+            <p><strong>Prix:</strong> {{ roundPrice(product.price).toFixed(2) }} Ar</p>
             <p><strong>Reference:</strong> {{ product.reference }}</p>
+            
+            <p>
+                <strong>Reste en stock:</strong> 
+                <span :class="quantityInStock > 0 ? 'stock-dispo' : 'stock-epuise'">
+                    {{ quantityInStock }} unité(s)
+                </span>
+            </p>
+
             <p><strong>Description:</strong> {{ pickLangValue(product.description_short) }}</p>
 
             <AddToCartForm
@@ -516,7 +547,7 @@ onMounted(fetchproduct);
                 @add-to-cart="addToCart"
             />
 
-            <p v-if="success">{{ success }}</p>
+            <p v-if="success" class="success-txt">{{ success }}</p>
         </div>
 
         <Warning :warning="warning" v-if="warning" />
